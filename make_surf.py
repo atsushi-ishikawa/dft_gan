@@ -7,20 +7,26 @@ import numpy as np
 import os, sys, json
 import random
 
-surf = fcc111(symbol="Pd", size=[4,4,4], a=4.0, vacuum=10.0)
+surf = fcc111(symbol="Pt", size=[4,4,4], a=4.0, vacuum=10.0)
 calc = EMT()
 #
 # replace atoms by some element in the list
 #
 max_replace = 5
 #elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-elementlist = ["Pt"]
+elementlist = ["Pd"]
 
 outjson = "surf.json"
 
+# remove old one
+if os.path.exists(outjson):
+	os.remove(outjson)
+
 datum = []
-num_data = 2
+num_data = 5
 db = connect(outjson)
+
+check = False # check structure or not
 #
 # shuffle
 #
@@ -48,9 +54,9 @@ for i in range(num_data):
 
 	surf_copy.set_calculator(calc)
 
-	view(surf_copy)
+	if check: view(surf_copy)
 
 	data = {"chemical_formula" : formula, "atomic_numbers" : index}
 	datum.append(data)
-	db.write(surf, data=data)
+	db.write(surf_copy, data=data)
 

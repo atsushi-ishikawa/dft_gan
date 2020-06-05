@@ -3,6 +3,7 @@ from ase.build import fcc111
 from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
+from ase.optimize import BFGS
 import numpy as np
 import os, sys, json
 import random
@@ -24,7 +25,14 @@ for id in range(1,numdata):
 	unique_id = obj["unique_id"]
 
 	surf.set_calculator(calc)
+
+	# optimize
+	opt = BFGS(surf)
+	opt.run(fmax=0.1)
+
+	# calc energy
 	Etot = surf.get_potential_energy()
+
 	data = {"unique_id" : unique_id, "total_energy":Etot}
 	datum.append(data)
 
