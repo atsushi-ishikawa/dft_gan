@@ -7,14 +7,14 @@ import numpy as np
 import os, sys
 import random
 
-surf = fcc111(symbol="Pt", size=[4,4,4], a=4.0, vacuum=10.0)
+surf = fcc111(symbol="Pd", size=[4,4,4], a=4.0, vacuum=10.0)
 calc = EMT()
 #
 # replace atoms by some element in the list
 #
 max_replace = 5
 #elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-elementlist = ["Pd"]
+elementlist = ["Pt"]
 
 outjson = "surf.json"
 

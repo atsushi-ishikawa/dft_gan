@@ -1,10 +1,10 @@
-from ase import Atoms, Atom
+from ase import Atoms
 from ase.build import add_adsorbate
 from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.optimize import BFGS
-import os, sys, json
+import os, json
 
 injson  = "surf.json"
 outjson = "reaction_energy.json"
@@ -25,7 +25,7 @@ check = False
 #
 # reactant
 #
-reac = Atoms("O2", [(0,0,0), (0,0,1.1)])
+reac = Atoms("N2", [(0,0,0), (0,0,1.1)])
 reac.set_calculator(calc)
 print(" --- calculating %s ---" % reac.get_chemical_formula())
 opt = BFGS(reac)
@@ -34,8 +34,8 @@ Ereac = reac.get_potential_energy()
 #
 # product
 #
-prod1 = Atoms("O", [(0,0,0)])
-prod2 = Atoms("O", [(0,0,0)])
+prod1 = Atoms("N", [(0,0,0)])
+prod2 = Atoms("N", [(0,0,0)])
 #
 # loop over surfaces
 #
