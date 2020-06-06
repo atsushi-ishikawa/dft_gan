@@ -4,7 +4,6 @@ from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.optimize import BFGS
-import numpy as np
 import os, sys, json
 
 injson  = "surf.json"
@@ -37,17 +36,6 @@ Ereac = reac.get_potential_energy()
 #
 prod1 = Atoms("O", [(0,0,0)])
 prod2 = Atoms("O", [(0,0,0)])
-prod1.set_calculator(calc)
-prod2.set_calculator(calc)
-print(" --- calculating %s ---" % prod1.get_chemical_formula())
-print(" --- calculating %s ---" % prod2.get_chemical_formula())
-opt = BFGS(prod1)
-opt.run(fmax=0.1)
-Eprod1 = prod1.get_potential_energy()
-opt = BFGS(prod2)
-opt.run(fmax=0.1)
-Eprod2 = prod2.get_potential_energy()
-Eproduct  = Eprod1 + Eprod2
 #
 # loop over surfaces
 #
@@ -71,7 +59,7 @@ for id in range(1,numdata):
 	Eprod_surf = surf.get_potential_energy()
 
 	Ereactant = Esurf + Ereac
-	Eproduct  = Eprod_surf + Eproduct
+	Eproduct  = Eprod_surf
 	deltaE = Eproduct - Ereactant
 	print("deltaE = %5.3e, Ereac = %5.3e, Eprod = %5.3e" % (deltaE, Ereactant, Eproduct))
 
@@ -81,4 +69,4 @@ for id in range(1,numdata):
 	datum.append(data)
 
 with open(outjson,"w") as f:
-	json.dump(datum, f)
+	json.dump(datum, f, indent=4)

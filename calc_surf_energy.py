@@ -37,4 +37,4 @@ for id in range(1,numdata):
 	datum.append(data)
 
 with open(outjson,"w") as f:
-	json.dump(datum, f)
+	json.dump(datum, f, indent=4)

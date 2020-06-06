@@ -4,7 +4,7 @@ from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
 import numpy as np
-import os, sys, json
+import os, sys
 import random
 
 surf = fcc111(symbol="Pt", size=[4,4,4], a=4.0, vacuum=10.0)
@@ -23,7 +23,9 @@ if os.path.exists(outjson):
 	os.remove(outjson)
 
 datum = []
-num_data = 5
+argvs = sys.argv
+num_data = int(argvs[1])
+
 db = connect(outjson)
 
 check = False # check structure or not
