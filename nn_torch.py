@@ -1,7 +1,6 @@
 import glob
 import os
-import matplotlib.pyplot as plt
-import numpy as np
+import sys
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -9,21 +8,27 @@ from tools import load_ase_json
 from ase.db import connect
 from sklearn.preprocessing import StandardScaler
 
-surface_data = "surf.json"
-reaction_data = "reaction_energy.json"
+from ase.build import fcc111
+from ase.visualize import view
+
+surf_json = "surf.json"
+reac_json = "reaction_energy.json"
+# argvs = sys.argv
+# surface_data = str(argvs[1])
+# reaction_data = str(argvs[2])
 #
 # load data and put it to DataFrame
 #
-df1 = load_ase_json(surface_data)
-df2 = pd.read_json(reaction_data)
+df1 = load_ase_json(surf_json)
+df2 = pd.read_json(reac_json)
 
 df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df = pd.concat([df1, df2], axis=1)
 
 numdata = len(df)
-numuse = int(numdata * 1.0)
-nclass = 4
+numuse  = int(numdata * 1.0)
+nclass  = 4
 log_dir = "./log"
 
 if os.path.exists(log_dir):
@@ -39,11 +44,11 @@ rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank
 print(df.head(numuse // 2 + 1))
 
-numepochs = 200
-printnum = 50
-batch_size = 10
-z_dim = 62
-lr = 1.0e-3
+numepochs  = 200
+printnum   = 50
+batch_size = 5
+z_dim  = 62
+lr     = 1.0e-3
 scaler = StandardScaler()
 
 
@@ -71,8 +76,10 @@ dataloader = make_dataloader(x=df["atomic_numbers"], y=df["reaction_energy"], ba
 # dataloader = make_dataloader(x=df["dos"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride = 2
+nstride  = 2
 natom = len(df.iloc[0]["atomic_numbers"])
+nrun  = df.iloc[-1]["run"]
+
 
 class Discriminator(nn.Module):
     #
@@ -87,7 +94,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
         )
         self.fc = nn.Sequential(
-            nn.Linear(natom//nstride*nchannel, 2 * nchannel),
+            nn.Linear(natom // nstride * nchannel, 2 * nchannel),
             # nn.BatchNorm1d(2*64), # seems unnecessary
             nn.LeakyReLU(0.2),
             nn.Linear(2 * nchannel, 1),
@@ -123,7 +130,7 @@ class Generator(nn.Module):
     def forward(self, input):
         input = input.view(batch_size, -1)
         x = self.conv(input)
-        x = x.view(batch_size, -1, 1) # need to be 3D to include label information
+        x = x.view(batch_size, -1, 1)  # need to be 3D to include label information
         return x
 
 
@@ -166,7 +173,9 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
         z = torch.rand(batch_size, z_dim, 1)
         label = label.long()
         real_system_label = concat_vector_label(real_system, label, nclass)
-
+        #
+        # updating Discriminator
+        #
         D_opt.zero_grad()
         # D_real = D(real_system)
         D_real = D(real_system_label)
@@ -181,9 +190,6 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
         D_fake = D(fake_system_label.detach())
         D_fake_loss = criterion(D_fake, y_fake)
         # D_fake_loss = torch.sum((D_fake - 0.0)**2) # LSGAN
-
-        # print("D_real:", D_real[0])
-        # print("D_fake:", D_fake[0])
 
         D_loss = D_real_loss + D_fake_loss
         D_loss /= batch_size
@@ -224,7 +230,6 @@ def generate(G, target=0):
 
 
 def gan(numepochs=100):
-    import matplotlib.pyplot as plt
     global D, G, criterion, D_opt, G_opt, dataloader
 
     history = {"D_loss": [], "G_loss": []}
@@ -237,23 +242,17 @@ def gan(numepochs=100):
             print("epoch = %d, D_loss = %f, G_loss = %f" % (epoch, D_loss, G_loss))
 
 
-gan(numepochs=numepochs)
-
-fakesystem = []
-for target in range(nclass):
-    fakesystem.append(generate(G, target=target))
-
 def make_atomic_numbers(inputlist):
     """
     :param inputlist:
     :return: newlist
     """
     # 3D --> 2D
-    if len(inputlist.shape)==3:
-        inputlist = inputlist.reshape(batch_size,-1)
+    if len(inputlist.shape) == 3:
+        inputlist = inputlist.reshape(batch_size, -1)
 
-    tmplist = inputlist.astype(int).tolist() # float --> int --> python list
-    tmplist = [list(map(lambda x: 78 if x>70 else 46, i)) for i in tmplist]
+    tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
+    tmplist = [list(map(lambda x: 78 if x > 70 else 46, i)) for i in tmplist]
     #
     # make uniquelist
     #
@@ -265,17 +264,30 @@ def make_atomic_numbers(inputlist):
 
     return newlist
 
+
+gan(numepochs=numepochs)
+
+fakesystem = []
+for target in range(nclass):
+    fakesystem.append(generate(G, target=target))
+
 samples = make_atomic_numbers(fakesystem[0])
 #
-# visualize
-# need some template -- should be fixed
+# Make fake examples: need some template -- should be fixed
 #
-from ase.build import fcc111
-from ase.visualize import view
-
-surf  = fcc111(symbol="Pd", size=[4,4,4], a=4.0, vacuum=10.0)
+surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
 check = False
+db = connect(surf_json)  # add to existing file
+
 for sample in samples:
     surf.set_atomic_numbers(sample)
+    atomic_numbers = surf.get_atomic_numbers()
+    formula = surf.get_chemical_formula()
+
     print("formula: ", surf.get_chemical_formula())
     if check: view(surf)
+    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun+1}
+    #
+    # write candidate to file
+    #
+    db.write(surf, data=data)
