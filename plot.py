@@ -13,19 +13,20 @@ df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 
 df = pd.concat([df1, df2], axis=1)
+df = df[df["reaction_energy"].notna()]
 
-maxrun = 3
-vals = []
-for i in range(maxrun):
-    run = df[df["run"]==i]
+values = []
+color = ["grey", "blue", "green"]
+for _, irow in df.iterrows():
+    value = irow["reaction_energy"]
+    run = irow["run"]
+    values.append([value,color[run]])
 
-    val = np.sort(run["reaction_energy"].dropna().values)
-    vals.append(val)
+values = sorted(values, key=lambda x: x[0])
 
-for i in range(maxrun):
-    val = vals[i]
-    label = "%d" % i
-    plt.bar(range(len(val)), val, label=label)
-    plt.legend()
+value = list(map(lambda x: x[0], values))
+color = list(map(lambda x: x[1], values))
 
+plt.bar(range(len(value)), value, color=color, alpha=0.4)
+plt.ylim([np.min(value)-0.05, np.min(value)+0.1])
 plt.show()

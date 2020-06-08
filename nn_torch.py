@@ -291,3 +291,4 @@ for sample in samples:
     # write candidate to file
     #
     db.write(surf, data=data)
+list(map(lambda x: x[1], v))
