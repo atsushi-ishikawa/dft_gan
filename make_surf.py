@@ -12,7 +12,8 @@ calc = EMT()
 #
 # replace atoms by some element in the list
 #
-max_replace = 5
+natoms = len(surf.get_atomic_numbers())
+max_replace = int(0.3*natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
 elementlist = ["Pt"]
 

@@ -1,12 +1,12 @@
 import glob
 import os
-import sys
 import pandas as pd
 import torch
 import torch.nn as nn
 from tools import load_ase_json
 from ase.db import connect
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
 from ase.build import fcc111
 from ase.visualize import view
@@ -24,12 +24,23 @@ df2 = pd.read_json(reac_json)
 
 df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
-df = pd.concat([df1, df2], axis=1)
-
+df  = pd.concat([df1, df2], axis=1)
+df  = df.sort_values("reaction_energy")
 numdata = len(df)
-numuse  = int(numdata * 1.0)
-nclass  = 4
-log_dir = "./log"
+#
+# parameters
+#
+numuse     = int(numdata * 1.0)
+nclass     = 10
+log_dir    = "./log"
+numepochs  = 200
+printnum   = 50
+batch_size = 30
+z_dim      = 100
+lr         = 1.0e-3
+adam_b1    = 0.5
+adam_b2    = 0.999
+scaler     = StandardScaler()
 
 if os.path.exists(log_dir):
     files = glob.glob(os.path.join(log_dir, "*.png"))
@@ -43,13 +54,6 @@ else:
 rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank
 print(df.head(numuse // 2 + 1))
-
-numepochs  = 200
-printnum   = 50
-batch_size = 5
-z_dim  = 62
-lr     = 1.0e-3
-scaler = StandardScaler()
 
 
 def make_dataloader(x=None, y=None, batch_size=10):
@@ -72,13 +76,13 @@ def make_dataloader(x=None, y=None, batch_size=10):
     return dataloader
 
 
-dataloader = make_dataloader(x=df["atomic_numbers"], y=df["reaction_energy"], batch_size=batch_size)
-# dataloader = make_dataloader(x=df["dos"], y=df["rank"], batch_size=batch_size)
+# dataloader = make_dataloader(x=df["atomic_numbers"], y=df["reaction_energy"], batch_size=batch_size)
+dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride  = 2
+nstride = 2
 natom = len(df.iloc[0]["atomic_numbers"])
-nrun  = df.iloc[-1]["run"]
+nrun = df["run"].max()
 
 
 class Discriminator(nn.Module):
@@ -89,20 +93,35 @@ class Discriminator(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             ## CNN-like
-            nn.Conv1d(1 + nclass, nchannel, kernel_size=3, stride=nstride, padding=1),
+            nn.Conv1d(1 + nclass, nchannel, kernel_size=4, stride=nstride, padding=1),
+            nn.BatchNorm1d(nchannel),
+            nn.LeakyReLU(0.2),
+            nn.Conv1d(nchannel, nchannel, kernel_size=1, stride=1, padding=0),
             nn.BatchNorm1d(nchannel),
             nn.LeakyReLU(0.2),
         )
         self.fc = nn.Sequential(
-            nn.Linear(natom // nstride * nchannel, 2 * nchannel),
-            # nn.BatchNorm1d(2*64), # seems unnecessary
-            nn.LeakyReLU(0.2),
-            nn.Linear(2 * nchannel, 1),
+            nn.Linear((1+nclass)*natom, 2*nchannel),
+            nn.BatchNorm1d(2*nchannel),  # need
+            nn.LeakyReLU(0.2),  # need
+
+            nn.Linear(2*nchannel, 3*nchannel),
+            nn.BatchNorm1d(3 * nchannel),  # need
+            nn.LeakyReLU(0.2),  # need
+
+            nn.Linear(3*nchannel, 1),
+
+            #nn.Linear(natom // nstride * nchannel, 2 * nchannel),
+            #nn.BatchNorm1d(2 * nchannel),  # seems unnecessary
+            #nn.LeakyReLU(0.2),
+            #nn.Linear(2 * nchannel, 1),
+
             nn.Sigmoid(),
         )
 
     def forward(self, input):
-        x = self.conv(input)
+        # x = self.conv(input)
+        x = input
         x = x.view(batch_size, -1)
         x = self.fc(x)
         return x
@@ -116,15 +135,17 @@ class Generator(nn.Module):
         super().__init__()
         n_feature = z_dim * (nclass + 1)
         self.conv = nn.Sequential(
-            nn.Linear(n_feature, 2 * n_feature),
-            nn.BatchNorm1d(2 * n_feature),
-            nn.ReLU(),
-            # nn.Linear(2*n_feature, 3*n_feature),
+            nn.Linear(n_feature, 2*n_feature),
+            nn.BatchNorm1d(2*n_feature),
+            # nn.Linear(n_feature, 2*n_feature),
+            # nn.BatchNorm1d(2*n_feature),
             # nn.ReLU(),
-            nn.Linear(2 * n_feature, 2 * n_feature),
-            nn.BatchNorm1d(2 * n_feature),
-            nn.ReLU(),
-            nn.Linear(2 * n_feature, natom),  # do not use activation after linear
+            # nn.Linear(2*n_feature,  2*n_feature),
+            # nn.BatchNorm1d(2*n_feature),
+            # nn.ReLU(),
+            # nn.Linear(2*n_feature, natom),  # do not use activation after linear
+
+            nn.Linear(2*n_feature, natom),  # do not use activation after linear
         )
 
     def forward(self, input):
@@ -134,14 +155,14 @@ class Generator(nn.Module):
         return x
 
 
-criterion = nn.BCELoss()
-# criterion = nn.MSELoss()
-
-D = Discriminator()
-G = Generator()
-
-D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(0.5, 0.999))
-G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(0.5, 0.999))
+def load_checkpoint(model, optimizer, filename):
+    if os.path.isfile(filename):
+        print("=> loading checkpoint '{}'".format(filename))
+        checkpoint = torch.load(filename)
+        model.load_state_dict(checkpoint["state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+    else:
+        print("no checkpoint found")
 
 
 def onehot_encode(label, nclass):
@@ -156,6 +177,24 @@ def concat_vector_label(vector, label, nclass):
     oh_label = oh_label.expand(N, nclass, C)
     result = torch.cat((vector, oh_label), dim=1)
     return result
+
+
+criterion = nn.MSELoss()
+#
+# define model and optimizer
+#
+D = Discriminator()
+G = Generator()
+
+D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(adam_b1, adam_b2))
+G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(adam_b1, adam_b2))
+#
+# load state
+#
+D_file = os.path.join(log_dir, "D_last.pth")
+G_file = os.path.join(log_dir, "G_last.pth")
+load_checkpoint(D, D_opt, D_file)
+load_checkpoint(G, G_opt, G_file)
 
 
 def train(D, G, criterion, D_opt, G_opt, dataloader):
@@ -177,22 +216,19 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
         # updating Discriminator
         #
         D_opt.zero_grad()
-        # D_real = D(real_system)
         D_real = D(real_system_label)
         D_real_loss = criterion(D_real, y_real)
         # D_real_loss = torch.sum((D_real - 1.0)**2) # LSGAN
 
         z_label = concat_vector_label(z, label, nclass)
-        # fake_system = G(z)
         fake_system = G(z_label)
         fake_system_label = concat_vector_label(fake_system, label, nclass)
-        # D_fake = D(fake_system.detach())
         D_fake = D(fake_system_label.detach())
         D_fake_loss = criterion(D_fake, y_fake)
         # D_fake_loss = torch.sum((D_fake - 0.0)**2) # LSGAN
 
         D_loss = D_real_loss + D_fake_loss
-        D_loss /= batch_size
+        # D_loss /= batch_size
         D_loss.backward()
         D_opt.step()
         D_running_loss += D_loss.item()
@@ -202,14 +238,12 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
         z = torch.rand(batch_size, z_dim, 1)
         z_label = concat_vector_label(z, label, nclass)
         G_opt.zero_grad()
-        # fake_system = G(z)
         fake_system = G(z_label)
         fake_system_label = concat_vector_label(fake_system, label, nclass)
-        # D_fake = D(fake_system)
         D_fake = D(fake_system_label)
         G_loss = criterion(D_fake, y_real)
         # G_loss = torch.sum((D_fake - 1.0)**2) # LSGAN
-        G_loss /= batch_size
+        # G_loss /= batch_size
 
         G_loss.backward()
         G_opt.step()
@@ -222,7 +256,6 @@ def generate(G, target=0):
     G.eval()
     z = torch.rand(batch_size, z_dim, 1)
     z_label = concat_vector_label(z, target, nclass)
-    # fake = G(z)
     fake = G(z_label)
     fake = fake.detach().numpy()
     fake = scaler.inverse_transform(fake)
@@ -239,44 +272,65 @@ def gan(numepochs=100):
         history["G_loss"].append(G_loss)
 
         if epoch != 0 and epoch % printnum == 0:
-            print("epoch = %d, D_loss = %f, G_loss = %f" % (epoch, D_loss, G_loss))
+            print("epoch = %3d, D_loss = %8.5f, G_loss = %8.5f" % (epoch, D_loss, G_loss))
+
+    plt.figure()
+    plt.plot(range(numepochs), history["D_loss"], "r-", label="Discriminator loss")
+    plt.plot(range(numepochs), history["G_loss"], "b-", label="Generator loss")
+    plt.legend()
+    plt.savefig(os.path.join(log_dir, "loss.png"))
+    plt.close()
 
 
-def make_atomic_numbers(inputlist):
+def make_atomic_numbers(inputlist, reflist):
     """
     :param inputlist:
+    :param reflist:
     :return: newlist
     """
+    AN = {"Pd": 46, "Pt": 78}  # atomic numbers
     # 3D --> 2D
     if len(inputlist.shape) == 3:
         inputlist = inputlist.reshape(batch_size, -1)
 
     tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
-    tmplist = [list(map(lambda x: 78 if x > 70 else 46, i)) for i in tmplist]
+    tmplist = [list(map(lambda x: AN["Pt"] if x > 70 else AN["Pd"], i)) for i in tmplist]
+
+    reflist = reflist.values.tolist()
     #
     # make uniquelist
     #
     newlist = []
     for i in tmplist:
         i = list(i)
-        if i not in newlist:
+        #if i not in newlist:
+        if i not in reflist:
             newlist.append(i)
+            reflist.append(i)
+            print("found new one: ", i)
 
     return newlist
 
 
 gan(numepochs=numepochs)
+#
+# save state
+#
+torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
+torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
 
 fakesystem = []
 for target in range(nclass):
     fakesystem.append(generate(G, target=target))
 
-samples = make_atomic_numbers(fakesystem[0])
+# print(fakesystem[0][0].astype(int).reshape(1, -1))
+samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
 surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
 check = False
+write = True
 db = connect(surf_json)  # add to existing file
 
 for sample in samples:
@@ -286,9 +340,9 @@ for sample in samples:
 
     print("formula: ", surf.get_chemical_formula())
     if check: view(surf)
-    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun+1}
+    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1}
     #
     # write candidate to file
     #
-    db.write(surf, data=data)
-list(map(lambda x: x[1], v))
+    if write:
+        db.write(surf, data=data)

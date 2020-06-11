@@ -15,12 +15,11 @@ reac_json = "reaction_energy.json"
 # injson  = argvs[1] # json for surfaces
 # outjson = argvs[2] # json for writing reaction energies
 
-
 # remove old one
 # if os.path.exists(outjson):
 #	os.remove(outjson)
 
-if not os.path.exists(reac_json):
+if not os.path.isfile(reac_json):
     with open(reac_json, "w") as f:
         f.write(json.dumps([], indent=4))
 else:

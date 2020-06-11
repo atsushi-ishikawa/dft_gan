@@ -17,6 +17,8 @@ df = df[df["reaction_energy"].notna()]
 
 runmax = df["run"].max()
 runmin = df["run"].min()
+maxval = df["reaction_energy"].max()
+minval = df["reaction_energy"].min()
 
 df3 = df.sort_values("reaction_energy")
 df3 = df3.reset_index()
@@ -26,14 +28,15 @@ def norm(run):
     return (run - runmin) / (runmax - runmin)
 
 
-plt.figure(figsize=(12,6))
+plt.figure(figsize=(18, 6))
 for i in range(runmax+1):
-    current = df3[df3["run"]==i]
+    current = df3[df3["run"] == i]
     pos = current.index.values
     val = current.reaction_energy
-    color = plt.cm.Blues(norm(i))
+    color = plt.cm.jet(norm(i))
     label = "run %2d" % i
-    plt.bar(pos, val, color=color, label=label)
+    plt.bar(pos, val, color=color, label=label, width=0.8, alpha=0.5)
+
+plt.ylim([minval-0.01, maxval+0.01])
 plt.legend()
 plt.show()
-
