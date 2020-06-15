@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 from ase.build import fcc111
 from ase.visualize import view
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("device is %s" % device)
+
 surf_json = "surf.json"
 reac_json = "reaction_energy.json"
 # argvs = sys.argv
@@ -67,8 +70,8 @@ def make_dataloader(x=None, y=None, batch_size=10):
     for i, j in enumerate(x):
         x[i] = scaler.fit_transform(x[i].reshape(-1, 1))
 
-    x = torch.tensor(x).float()
-    y = torch.tensor(y).float()
+    x = torch.tensor(x, device=device).float()
+    y = torch.tensor(y, device=device).float()
 
     dataset = TensorDataset(x, y)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -76,7 +79,6 @@ def make_dataloader(x=None, y=None, batch_size=10):
     return dataloader
 
 
-# dataloader = make_dataloader(x=df["atomic_numbers"], y=df["reaction_energy"], batch_size=batch_size)
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
@@ -135,17 +137,26 @@ class Generator(nn.Module):
         super().__init__()
         n_feature = z_dim * (nclass + 1)
         self.conv = nn.Sequential(
-            nn.Linear(n_feature, 2*n_feature),
+            nn.Linear(n_feature, 2*n_feature),  # 2*n-->4*n is not good
             nn.BatchNorm1d(2*n_feature),
+            nn.ReLU(),        # currently best
+
+            nn.Linear(2*n_feature, 2*n_feature),  # 2*n --> 4*n is not good, too
+            nn.BatchNorm1d(2*n_feature),
+            nn.ReLU(),
+
+            nn.Linear(2 * n_feature, 2 * n_feature),
+            nn.BatchNorm1d(2 * n_feature),
+            nn.ReLU(),
+
             # nn.Linear(n_feature, 2*n_feature),
             # nn.BatchNorm1d(2*n_feature),
             # nn.ReLU(),
             # nn.Linear(2*n_feature,  2*n_feature),
             # nn.BatchNorm1d(2*n_feature),
             # nn.ReLU(),
-            # nn.Linear(2*n_feature, natom),  # do not use activation after linear
 
-            nn.Linear(2*n_feature, natom),  # do not use activation after linear
+            nn.Linear(2*n_feature, natom),
         )
 
     def forward(self, input):
@@ -165,15 +176,15 @@ def load_checkpoint(model, optimizer, filename):
         print("no checkpoint found")
 
 
-def onehot_encode(label, nclass):
-    eye = torch.eye(nclass)
+def onehot_encode(label, nclass, device):
+    eye = torch.eye(nclass, device=device)
     return eye[label].view(-1, nclass, 1)
 
 
-def concat_vector_label(vector, label, nclass):
+def concat_vector_label(vector, label, nclass, device):
     N, C, L = vector.shape
-    vector = vector.view(N, L, C)
-    oh_label = onehot_encode(label, nclass)
+    vector  = vector.view(N, L, C)
+    oh_label = onehot_encode(label, nclass, device)
     oh_label = oh_label.expand(N, nclass, C)
     result = torch.cat((vector, oh_label), dim=1)
     return result
@@ -183,8 +194,8 @@ criterion = nn.MSELoss()
 #
 # define model and optimizer
 #
-D = Discriminator()
-G = Generator()
+D = Discriminator().to(device)
+G = Generator().to(device)
 
 D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(adam_b1, adam_b2))
 G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(adam_b1, adam_b2))
@@ -201,28 +212,27 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
     D.train()
     G.train()
 
-    y_real = torch.ones(batch_size, 1)
-    y_fake = torch.zeros(batch_size, 1)
+    y_real = torch.ones(batch_size, 1, device=device)
+    y_fake = torch.zeros(batch_size, 1, device=device)
 
     D_running_loss = 0.0
     G_running_loss = 0.0
 
     for batch_idx, (real_system, label) in enumerate(dataloader):
         if real_system.size()[0] != batch_size: break
-        z = torch.rand(batch_size, z_dim, 1)
+        z = torch.rand(batch_size, z_dim, 1, device=device)
         label = label.long()
-        real_system_label = concat_vector_label(real_system, label, nclass)
+        real_system_label = concat_vector_label(real_system, label, nclass, device)
         #
         # updating Discriminator
         #
         D_opt.zero_grad()
         D_real = D(real_system_label)
         D_real_loss = criterion(D_real, y_real)
-        # D_real_loss = torch.sum((D_real - 1.0)**2) # LSGAN
 
-        z_label = concat_vector_label(z, label, nclass)
+        z_label = concat_vector_label(z, label, nclass, device)
         fake_system = G(z_label)
-        fake_system_label = concat_vector_label(fake_system, label, nclass)
+        fake_system_label = concat_vector_label(fake_system, label, nclass, device)
         D_fake = D(fake_system_label.detach())
         D_fake_loss = criterion(D_fake, y_fake)
         # D_fake_loss = torch.sum((D_fake - 0.0)**2) # LSGAN
@@ -235,11 +245,11 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
         #
         # updating Generator
         #
-        z = torch.rand(batch_size, z_dim, 1)
-        z_label = concat_vector_label(z, label, nclass)
+        z = torch.rand(batch_size, z_dim, 1, device=device)
+        z_label = concat_vector_label(z, label, nclass, device)
         G_opt.zero_grad()
         fake_system = G(z_label)
-        fake_system_label = concat_vector_label(fake_system, label, nclass)
+        fake_system_label = concat_vector_label(fake_system, label, nclass, device)
         D_fake = D(fake_system_label)
         G_loss = criterion(D_fake, y_real)
         # G_loss = torch.sum((D_fake - 1.0)**2) # LSGAN
@@ -254,8 +264,8 @@ def train(D, G, criterion, D_opt, G_opt, dataloader):
 
 def generate(G, target=0):
     G.eval()
-    z = torch.rand(batch_size, z_dim, 1)
-    z_label = concat_vector_label(z, target, nclass)
+    z = torch.rand(batch_size, z_dim, 1, device=device)
+    z_label = concat_vector_label(z, target, nclass, device)
     fake = G(z_label)
     fake = fake.detach().numpy()
     fake = scaler.inverse_transform(fake)
@@ -307,7 +317,6 @@ def make_atomic_numbers(inputlist, reflist):
         if i not in reflist:
             newlist.append(i)
             reflist.append(i)
-            print("found new one: ", i)
 
     return newlist
 
@@ -323,7 +332,7 @@ fakesystem = []
 for target in range(nclass):
     fakesystem.append(generate(G, target=target))
 
-# print(fakesystem[0][0].astype(int).reshape(1, -1))
+print(fakesystem[0][0].astype(int).reshape(1, -1))
 samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed

@@ -29,11 +29,12 @@ def norm(run):
 
 
 plt.figure(figsize=(18, 6))
+colormap = plt.cm.viridis_r
 for i in range(runmax+1):
     current = df3[df3["run"] == i]
     pos = current.index.values
     val = current.reaction_energy
-    color = plt.cm.jet(norm(i))
+    color = "grey" if i == 0 else colormap(norm(i))
     label = "run %2d" % i
     plt.bar(pos, val, color=color, label=label, width=0.8, alpha=0.5)
 
