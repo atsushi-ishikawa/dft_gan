@@ -94,7 +94,7 @@ class Discriminator(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv = nn.Sequential(
-            ## CNN-like
+            ## CNN-like --> currently not using
             nn.Conv1d(1 + nclass, nchannel, kernel_size=4, stride=nstride, padding=1),
             nn.BatchNorm1d(nchannel),
             nn.LeakyReLU(0.2),
@@ -107,8 +107,8 @@ class Discriminator(nn.Module):
             nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-            nn.Linear(2*nchannel, 3*nchannel),
-            nn.BatchNorm1d(3 * nchannel),  # need
+            nn.Linear(2*nchannel, 3*nchannel),  # 3*nchannel --> 2*nchannel does'nt work?
+            nn.BatchNorm1d(3*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
             nn.Linear(3*nchannel, 1),
@@ -145,16 +145,15 @@ class Generator(nn.Module):
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            nn.Linear(2 * n_feature, 2 * n_feature),
-            nn.BatchNorm1d(2 * n_feature),
+            # adding this part is better
+            nn.Linear(2*n_feature, 2*n_feature),
+            nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            # nn.Linear(n_feature, 2*n_feature),
-            # nn.BatchNorm1d(2*n_feature),
-            # nn.ReLU(),
-            # nn.Linear(2*n_feature,  2*n_feature),
-            # nn.BatchNorm1d(2*n_feature),
-            # nn.ReLU(),
+            # not really helpful
+            #nn.Linear(2 * n_feature, 2 * n_feature),
+            #nn.BatchNorm1d(2 * n_feature),
+            #nn.ReLU(),
 
             nn.Linear(2*n_feature, natom),
         )
