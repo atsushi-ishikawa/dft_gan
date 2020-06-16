@@ -44,13 +44,15 @@ lr         = 1.0e-3
 adam_b1    = 0.5
 adam_b2    = 0.999
 scaler     = StandardScaler()
+cleanlog   = False
 
-if os.path.exists(log_dir):
-    files = glob.glob(os.path.join(log_dir, "*.png"))
-    for f in files:
-        os.remove(f)
-else:
-    os.makedirs(log_dir)
+if cleanlog:
+    if os.path.exists(log_dir):
+        files = glob.glob(os.path.join(log_dir, "*"))
+        for f in files:
+            os.remove(f)
+    else:
+        os.makedirs(log_dir)
 #
 # divide into groups according to adsorption energy
 #
@@ -145,16 +147,19 @@ class Generator(nn.Module):
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            nn.Linear(2 * n_feature, 2 * n_feature),
-            nn.BatchNorm1d(2 * n_feature),
+            nn.Linear(2*n_feature, 2*n_feature),
+            nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            # nn.Linear(n_feature, 2*n_feature),
-            # nn.BatchNorm1d(2*n_feature),
-            # nn.ReLU(),
-            # nn.Linear(2*n_feature,  2*n_feature),
-            # nn.BatchNorm1d(2*n_feature),
-            # nn.ReLU(),
+			# good with 2n. 4n is not good
+            nn.Linear(2*n_feature, 2*n_feature),
+            nn.BatchNorm1d(2*n_feature),
+            nn.ReLU(),
+
+			# last --> bad
+            #nn.Linear(2*n_feature, 2*n_feature),
+            #nn.BatchNorm1d(2*n_feature),
+            #nn.ReLU(),
 
             nn.Linear(2*n_feature, natom),
         )
@@ -267,7 +272,7 @@ def generate(G, target=0):
     z = torch.rand(batch_size, z_dim, 1, device=device)
     z_label = concat_vector_label(z, target, nclass, device)
     fake = G(z_label)
-    fake = fake.detach().numpy()
+    fake = fake.detach().cpu().numpy()
     fake = scaler.inverse_transform(fake)
     return fake
 
@@ -288,7 +293,7 @@ def gan(numepochs=100):
     plt.plot(range(numepochs), history["D_loss"], "r-", label="Discriminator loss")
     plt.plot(range(numepochs), history["G_loss"], "b-", label="Generator loss")
     plt.legend()
-    plt.savefig(os.path.join(log_dir, "loss.png"))
+    plt.savefig(os.path.join(log_dir, "loss%03d.png" % nrun))
     plt.close()
 
 

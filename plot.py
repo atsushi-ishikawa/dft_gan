@@ -1,10 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from tools import load_ase_json
+import os
 import numpy as np
 
 surf_json = "surf.json"
 reac_json = "reaction_energy.json"
+
+log_dir = "./log"
 
 df1 = load_ase_json(surf_json)
 df2 = pd.read_json(reac_json)
@@ -40,4 +43,4 @@ for i in range(runmax+1):
 
 plt.ylim([minval-0.01, maxval+0.01])
 plt.legend()
-plt.show()
+plt.savefig(os.path.join(log_dir, "bars%03d.png" % runmax))
