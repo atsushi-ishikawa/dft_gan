@@ -47,6 +47,7 @@ else:
 numdata = db1.count() + 1
 
 check = False
+steps = 10  # maximum number of optimization steps
 
 def set_unitcell(Atoms, vacuum=10.0):
 	import numpy as np
@@ -67,7 +68,7 @@ set_unitcell(reac)
 set_calculator_with_label(reac, calc)
 print(" --- calculating %s ---" % reac.get_chemical_formula())
 opt = BFGS(reac)
-opt.run(fmax=0.1)
+opt.run(fmax=0.1, steps=steps)
 Ereac = reac.get_potential_energy()
 #
 # product
@@ -96,14 +97,14 @@ for id in range(1, numdata):
         set_calculator_with_label(surf, calc)
         #surf.set_calculator(calc)
         opt = BFGS(surf)
-        opt.run(fmax=0.1)
+        opt.run(fmax=0.1, steps=steps)
         Esurf = surf.get_potential_energy()
 
         add_adsorbate(surf, prod1, offset=(0.3, 0.3), height=1.3)
         add_adsorbate(surf, prod2, offset=(0.6, 0.6), height=1.3)
         print(" --- calculating %s ---" % surf.get_chemical_formula())
         opt = BFGS(surf)
-        opt.run(fmax=0.1)
+        opt.run(fmax=0.1, steps=steps)
         Eprod_surf = surf.get_potential_energy()
 
         Ereactant = Esurf + Ereac
