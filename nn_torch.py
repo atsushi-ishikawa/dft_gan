@@ -34,15 +34,15 @@ numdata = len(df)
 # parameters
 #
 numuse     = int(numdata * 1.0)
-nclass     = 10
+nclass     = 10   # 3 --- uniform distribution.  15,20 --- not good atomic numbers
 log_dir    = "./log"
-numepochs  = 200
+numepochs  = 500  # 500 seems better than 200
 printnum   = 50
 batch_size = 30
 z_dim      = 100
 lr         = 1.0e-3
-adam_b1    = 0.5
-adam_b2    = 0.999
+b1         = 0.5
+b2         = 0.999
 scaler     = StandardScaler()
 cleanlog   = False
 
@@ -109,16 +109,16 @@ class Discriminator(nn.Module):
             nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-            nn.Linear(2*nchannel, 3*nchannel),
-            nn.BatchNorm1d(3 * nchannel),  # need
+            nn.Linear(2*nchannel, 2*nchannel),
+            nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-            nn.Linear(3*nchannel, 1),
+			# good prediction but bad atomic_numbers
+            #nn.Linear(2*nchannel, 2*nchannel),
+            #nn.BatchNorm1d(2*nchannel),  # need
+            #nn.LeakyReLU(0.2),  # need
 
-            #nn.Linear(natom // nstride * nchannel, 2 * nchannel),
-            #nn.BatchNorm1d(2 * nchannel),  # seems unnecessary
-            #nn.LeakyReLU(0.2),
-            #nn.Linear(2 * nchannel, 1),
+            nn.Linear(2*nchannel, 1),
 
             nn.Sigmoid(),
         )
@@ -156,7 +156,7 @@ class Generator(nn.Module):
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-			# last --> bad
+			# bad
             #nn.Linear(2*n_feature, 2*n_feature),
             #nn.BatchNorm1d(2*n_feature),
             #nn.ReLU(),
@@ -202,8 +202,8 @@ criterion = nn.MSELoss()
 D = Discriminator().to(device)
 G = Generator().to(device)
 
-D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(adam_b1, adam_b2))
-G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(adam_b1, adam_b2))
+D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(b1, b2))
+G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(b1, b2))
 #
 # load state
 #
