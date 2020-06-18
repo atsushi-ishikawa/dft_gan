@@ -9,15 +9,17 @@ import json
 import os
 import pandas as pd
 import numpy as np
+import argparse
 
-surf_json = "surf.json"
-reac_json = "reaction_energy.json"
+parser = argparse.ArgumentParser()
+parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
+parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json",  default="reaction_energy.json", help="json for writing reaction energies")
 
-calculator = "vasp"
-
-# argvs   = sys.argv
-# injson  = argvs[1] # json for surfaces
-# outjson = argvs[2] # json for writing reaction energies
+args = parser.parse_args()
+calculator = args.calculator.lower()
+surf_json  = args.surf_json
+reac_json  = args.reac_json
 
 # remove old one
 # if os.path.exists(outjson):
@@ -33,16 +35,27 @@ else:
 db1 = connect(surf_json)
 
 if "vasp" in calculator:
-    prec = "low"
+    prec = "normal"
     xc   = "pbe"
     nsw  = 0
     ibrion = -1
-    kpts = [1, 1, 1]
+    algo = "VeryFast"
+    kpts_mol  = [1, 1, 1]
+    kpts_surf = [2, 2, 1]
     pp   = "potpaw_PBE.54"
+    npar = 12
+    nsim = npar
+    kpar = 1
+    isym = 0
+    lreal = True
 
-    calc = Vasp(label=None, prec=prec, xc=xc, ibrion=ibrion ,nsw=nsw, kpts=kpts, pp=pp)
+    calc_mol  = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, 
+                     kpts=kpts_mol,  pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
+    calc_surf = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, 
+                     kpts=kpts_surf, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
 else:
-    calc = EMT()
+    calc_mol  = EMT()
+    calc_surf = EMT()
 
 numdata = db1.count() + 1
 
@@ -54,18 +67,20 @@ def set_unitcell(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1])*vacuum
 	Atoms.set_cell(cell)
 
-def set_calculator_with_label(Atoms, calc):
-    name = Atoms.get_chemical_formula()
+def set_calculator_with_label(Atoms, calc, label=None):
     if "vasp" in calculator:
-        print("set calculator to ", name)
-        calc.set_label(name)
+        if label is None:
+            name = Atoms.get_chemical_formula()
+            calc.set_label(name)
+        else:
+            calc.set_label(label)
     Atoms.set_calculator(calc)
 #
 # reactant
 #
 reac = Atoms("N2", [(0, 0, 0), (0, 0, 1.1)])
 set_unitcell(reac)
-set_calculator_with_label(reac, calc)
+set_calculator_with_label(reac, calc_mol)
 print(" --- calculating %s ---" % reac.get_chemical_formula())
 opt = BFGS(reac)
 opt.run(fmax=0.1, steps=steps)
@@ -80,7 +95,7 @@ prod2 = Atoms("N", [(0, 0, 0)])
 #
 for id in range(1, numdata):
     surf = db1.get_atoms(id=id)
-    obj = db1[id]
+    obj  = db1[id]
     data = obj.data
     unique_id = obj["unique_id"]
 
@@ -94,15 +109,24 @@ for id in range(1, numdata):
         # not found -- calculate here
         #
         print(" --- calculating %s ---" % surf.get_chemical_formula())
-        set_calculator_with_label(surf, calc)
-        #surf.set_calculator(calc)
+        #
+        # surface
+        #
+        label = surf.get_chemical_formula() + "_" + unique_id
+        set_calculator_with_label(surf, calc_surf, label=label)
         opt = BFGS(surf)
         opt.run(fmax=0.1, steps=steps)
         Esurf = surf.get_potential_energy()
-
+        #
+        # surface + adsorbate
+        #
         add_adsorbate(surf, prod1, offset=(0.3, 0.3), height=1.3)
         add_adsorbate(surf, prod2, offset=(0.6, 0.6), height=1.3)
+        #
         print(" --- calculating %s ---" % surf.get_chemical_formula())
+        #
+        label = surf.get_chemical_formula() + "_" + unique_id
+        set_calculator_with_label(surf, calc_surf, label=label)
         opt = BFGS(surf)
         opt.run(fmax=0.1, steps=steps)
         Eprod_surf = surf.get_potential_energy()
