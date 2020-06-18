@@ -5,6 +5,7 @@ from ase.calculators.vasp import Vasp
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.optimize import BFGS
+import sys
 import json
 import os
 import pandas as pd
@@ -33,6 +34,7 @@ else:
     df_reac = df_reac.set_index("unique_id")
 
 db1 = connect(surf_json)
+steps = 20  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec = "normal"
@@ -78,12 +80,32 @@ def set_calculator_with_label(Atoms, calc, label=None):
 #
 # reactant
 #
+
+def run_optimizer(atoms, steps=10):
+    fmax  = 0.1
+
+    calc_orig  = atoms.get_calculator()
+    calc = calc_orig
+    if calc.name == "emt":
+        opt = BFGS(atoms)
+        opt.run(fmax=fmax, steps=steps)
+    elif calc.name == "Vasp":
+        calc.int_params["ibrion"] = 2
+        calc.int_params["nsw"] = steps
+        calc.input_params["potim"] = 0.1
+        atoms.set_calculator(calc)
+        atoms.get_potential_energy()
+    else:
+        print("vasp or emt")
+        sys.exit()
+    print(" ------- geometry optimization finished ------- ")
+    atoms.set_calculator(calc_orig)
+
 reac = Atoms("N2", [(0, 0, 0), (0, 0, 1.1)])
 set_unitcell(reac)
 set_calculator_with_label(reac, calc_mol)
 print(" --- calculating %s ---" % reac.get_chemical_formula())
-opt = BFGS(reac)
-opt.run(fmax=0.1, steps=steps)
+run_optimizer(reac, steps=steps)
 Ereac = reac.get_potential_energy()
 #
 # product
@@ -114,8 +136,7 @@ for id in range(1, numdata):
         #
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        opt = BFGS(surf)
-        opt.run(fmax=0.1, steps=steps)
+        run_optimizer(surf, steps=steps)
         Esurf = surf.get_potential_energy()
         #
         # surface + adsorbate
@@ -127,8 +148,7 @@ for id in range(1, numdata):
         #
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        opt = BFGS(surf)
-        opt.run(fmax=0.1, steps=steps)
+        run_optimizer(surf, steps=steps)
         Eprod_surf = surf.get_potential_energy()
 
         Ereactant = Esurf + Ereac
