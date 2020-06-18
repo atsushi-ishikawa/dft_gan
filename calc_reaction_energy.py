@@ -5,6 +5,7 @@ from ase.calculators.vasp import Vasp
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.optimize import BFGS
+import sys
 import json
 import os
 import pandas as pd
@@ -33,11 +34,13 @@ else:
     df_reac = df_reac.set_index("unique_id")
 
 db1 = connect(surf_json)
+steps = 10  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec = "normal"
     xc   = "pbe"
     nsw  = 0
+    nelm   = 10
     ibrion = -1
     algo = "VeryFast"
     kpts_mol  = [1, 1, 1]
@@ -49,9 +52,9 @@ if "vasp" in calculator:
     isym = 0
     lreal = True
 
-    calc_mol  = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, 
+    calc_mol  = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, nelm=nelm,
                      kpts=kpts_mol,  pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
-    calc_surf = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, 
+    calc_surf = Vasp(label=None, prec=prec, xc=xc, algo=algo, ibrion=ibrion ,nsw=nsw, nelm=nelm,
                      kpts=kpts_surf, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
 else:
     calc_mol  = EMT()
@@ -60,7 +63,6 @@ else:
 numdata = db1.count() + 1
 
 check = False
-steps = 10  # maximum number of optimization steps
 
 def set_unitcell(Atoms, vacuum=10.0):
 	import numpy as np
@@ -78,12 +80,35 @@ def set_calculator_with_label(Atoms, calc, label=None):
 #
 # reactant
 #
+
+def run_optimizer(atoms, steps=10):
+    fmax  = 0.1
+
+    calc = atoms.get_calculator()
+    if calc.name == "emt":
+        opt = BFGS(atoms)
+        opt.run(fmax=fmax, steps=steps)
+    elif calc.name == "Vasp":
+        calc.int_params["ibrion"] = 2
+        calc.int_params["nsw"] = steps
+        calc.input_params["potim"] = 0.1
+        atoms.set_calculator(calc)
+        atoms.get_potential_energy()
+    else:
+        print("use vasp or emt. now ", calc.name)
+        sys.exit()
+    print(" ------- geometry optimization finished ------- ")
+    # restore calculator
+    if calc.name == "Vasp":
+        calc.int_params["ibrion"] = -1
+        calc.int_params["nsw"] = 0
+        atoms.set_calculator(calc)
+
 reac = Atoms("N2", [(0, 0, 0), (0, 0, 1.1)])
 set_unitcell(reac)
 set_calculator_with_label(reac, calc_mol)
 print(" --- calculating %s ---" % reac.get_chemical_formula())
-opt = BFGS(reac)
-opt.run(fmax=0.1, steps=steps)
+run_optimizer(reac, steps=steps)
 Ereac = reac.get_potential_energy()
 #
 # product
@@ -114,8 +139,7 @@ for id in range(1, numdata):
         #
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        opt = BFGS(surf)
-        opt.run(fmax=0.1, steps=steps)
+        run_optimizer(surf, steps=steps)
         Esurf = surf.get_potential_energy()
         #
         # surface + adsorbate
@@ -127,8 +151,7 @@ for id in range(1, numdata):
         #
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        opt = BFGS(surf)
-        opt.run(fmax=0.1, steps=steps)
+        run_optimizer(surf, steps=steps)
         Eprod_surf = surf.get_potential_energy()
 
         Ereactant = Esurf + Ereac
