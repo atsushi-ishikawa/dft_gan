@@ -52,6 +52,8 @@ if "vasp" in calculator:
     nelm   = 50
     ibrion = -1
     algo = "VeryFast"
+    efiff  = 1.0e-5
+    ediffg = ediff*0.1
     kpts_mol  = [1, 1, 1]
     kpts_surf = [3, 3, 1]
     kgamma = True
@@ -62,9 +64,9 @@ if "vasp" in calculator:
     isym  = 0
     lreal = True
 
-    calc_mol  = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ibrion=ibrion ,nsw=nsw, nelm=nelm,
+    calc_mol  = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion ,nsw=nsw, nelm=nelm,
                      kpts=kpts_mol,  kgamma=kgamma, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
-    calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ibrion=ibrion ,nsw=nsw, nelm=nelm,
+    calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion ,nsw=nsw, nelm=nelm,
                      kpts=kpts_surf, kgamma=kgamma, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
 else:
     calc_mol  = EMT()
@@ -74,10 +76,12 @@ numdata = db1.count() + 1
 
 check = False
 
+
 def set_unitcell(Atoms, vacuum=10.0):
 	import numpy as np
 	cell = np.array([1, 1, 1])*vacuum
 	Atoms.set_cell(cell)
+
 
 def set_calculator_with_label(Atoms, calc, label=None):
     if "vasp" in calculator:
@@ -89,17 +93,21 @@ def set_calculator_with_label(Atoms, calc, label=None):
     Atoms.set_calculator(calc)
 
 
-def run_optimizer(atoms, steps=10):
-    fmax  = 0.1
-
+def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
     calc = atoms.get_calculator()
     if calc.name.lower() == "emt":
+        # EMT
         opt = BFGS(atoms)
         opt.run(fmax=fmax, steps=steps)
     elif calc.name.lower() == "vasp":
-        calc.int_params["ibrion"] = 2
-        calc.int_params["nsw"] = steps
+        # VASP
+        calc.int_params["ibrion"]  = 2
+        calc.int_params["nsw"]     = steps
         calc.input_params["potim"] = 0.1
+        calc.exp_params["ediffg"] = -fmax  # force based
+        if optimize_unitcell:
+            calc.int_params["isif"] = 4
+            calc.exp_params["ediffg"] = ediff*0.1  # energy based
         atoms.set_calculator(calc)
         atoms.get_potential_energy()
     else:
@@ -148,15 +156,14 @@ for id in range(1, numdata):
         set_unitcell(reac)
         label = reac.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(reac, calc_mol, label=label)
-        run_optimizer(reac, steps=steps)
+        run_optimizer(reac, fmax=0.1, steps=steps)
         Ereac = reac.get_potential_energy()
         if clean: shutil.rmtree(label)
         #
         # product
         #
         prod1 = Atoms("N", [(0, 0, 0)])
-        prod2 = Atoms("N", [(0, 0, 0)])
-
+        #prod2 = Atoms("N", [(0, 0, 0)])
         #
         # surface
         #
@@ -166,24 +173,24 @@ for id in range(1, numdata):
 
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        run_optimizer(surf, steps=steps)
+        run_optimizer(surf, fmax=0.1, steps=steps, optimize_unitcell=True)
         Esurf = surf.get_potential_energy()
         if clean: shutil.rmtree(label)
         #
         # surface + adsorbate
         #
         add_adsorbate(surf, prod1, offset=(0.3, 0.3), height=1.3)
-        add_adsorbate(surf, prod2, offset=(0.6, 0.6), height=1.3)
+        #add_adsorbate(surf, prod2, offset=(0.6, 0.6), height=1.3)
         #
         print(" --- calculating %s ---" % surf.get_chemical_formula())
         #
         label = surf.get_chemical_formula() + "_" + unique_id
         set_calculator_with_label(surf, calc_surf, label=label)
-        run_optimizer(surf, steps=steps)
+        run_optimizer(surf, fmax=0.1, steps=steps)
         Eprod_surf = surf.get_potential_energy()
         if clean: shutil.rmtree(label)
 
-        Ereactant = Esurf + Ereac
+        Ereactant = Esurf + 0.5*Ereac
         Eproduct  = Eprod_surf
         deltaE = Eproduct - Ereactant
         print("deltaE = %5.3e, Ereac = %5.3e, Eprod = %5.3e" % (deltaE, Ereactant, Eproduct))
