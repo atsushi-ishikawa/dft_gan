@@ -105,6 +105,7 @@ def run_optimizer(atoms, steps=10):
     else:
         print("use vasp or emt. now ", calc.name)
         sys.exit()
+
     print(" ------- geometry optimization finished ------- ")
 	#
     # reset vasp calculator to single point energy's one
@@ -113,6 +114,7 @@ def run_optimizer(atoms, steps=10):
         calc.int_params["ibrion"] = -1
         calc.int_params["nsw"] = 0
         atoms.set_calculator(calc)
+
 #
 # loop over surfaces
 #

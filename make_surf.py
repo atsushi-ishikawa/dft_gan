@@ -32,6 +32,7 @@ check = False  # check structure or not
 #
 # shuffle
 #
+id = 1
 for i in range(num_data):
     #
     # make shuffled surface
@@ -60,3 +61,5 @@ for i in range(num_data):
 
     data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
     db.write(surf_copy, data=data)
+    db.update(id, status="reaction_energy_not_done")
+    id += 1

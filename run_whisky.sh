@@ -4,11 +4,11 @@
 #$ -cwd
 #$ -q all.q
 #$ -pe openmpi24 24
-#$ -l hostname=whisky??
+#$ -l hostname=whisky2?
 
 # clean
-rm *.{e,o}[0-9]*
-rm stdout.txt stderr.txt
-rm -rf N2 Pd*
+#rm *.{e,o}[0-9]*
+#rm stdout.txt stderr.txt
+#rm -rf N2* Pd*
 
-python calc_reaction_energy.py 1> stdout.txt 2> stderr.txt 
+python calc_reaction_energy.py --calculator vasp 1> stdout$$.txt 2> stderr$$.txt 
