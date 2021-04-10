@@ -19,6 +19,7 @@ reac_json = "reaction_energy.json"
 # argvs = sys.argv
 # surface_data = str(argvs[1])
 # reaction_data = str(argvs[2])
+
 #
 # load data and put it to DataFrame
 #
@@ -44,7 +45,9 @@ lr         = 1.0e-3
 adam_b1    = 0.5
 adam_b2    = 0.999
 scaler     = StandardScaler()
-
+#
+# cleanup old logdir
+#
 if os.path.exists(log_dir):
     files = glob.glob(os.path.join(log_dir, "*.png"))
     for f in files:
@@ -52,7 +55,7 @@ if os.path.exists(log_dir):
 else:
     os.makedirs(log_dir)
 #
-# divide into groups according to adsorption energy
+# divide into groups according to reaction energy
 #
 rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank

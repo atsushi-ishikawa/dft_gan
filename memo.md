@@ -2,6 +2,7 @@
 * でもG-lossが大きいと(5くらい)予測ステップがあまり上手ではない
 * DOSの生成とatomic numberの生成に適したarchtechtureはちがうような気がする。DOSの場合は、BatchNormが邪魔をするがatomic numberではBatchNormがあると非常に良い
 * うまくいってる時のloss
+* generatorのparameter数が小さいと"より絞り込んだ"感じになり、parameterが多いとgenerated sample数も多くなる気がする
 
 <img src=file:///Users/ishi/ase/nn_reac/results/loss200612.png width=50%>
 
