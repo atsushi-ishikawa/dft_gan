@@ -85,7 +85,7 @@ def make_dataloader(x=None, y=None, batch_size=10):
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride = 2
+nstride  = 2
 natom = len(df.iloc[0]["atomic_numbers"])
 nrun = df["run"].max()
 
@@ -296,17 +296,17 @@ def gan(numepochs=100):
 
 def make_atomic_numbers(inputlist, reflist):
     """
-    :param inputlist:
-    :param reflist:
+    :param inputlist
+    :param reflist
     :return: newlist
     """
-    AN = {"Pd": 46, "Pt": 78}  # atomic numbers
+    atom_num = {"Pd": 46, "Pt": 78}  # atomic numbers
     # 3D --> 2D
     if len(inputlist.shape) == 3:
         inputlist = inputlist.reshape(batch_size, -1)
 
     tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
-    tmplist = [list(map(lambda x: AN["Pt"] if x > 70 else AN["Pd"], i)) for i in tmplist]
+    tmplist = [list(map(lambda x: atom_num["Pt"] if x > 70 else atom_num["Pd"], i)) for i in tmplist]
 
     reflist = reflist.values.tolist()
     #
