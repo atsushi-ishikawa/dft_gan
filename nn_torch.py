@@ -14,6 +14,10 @@ from ase.visualize import view
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device is %s" % device)
 
+# set random number seed
+seed = 0
+torch.manual_seed(seed)
+
 surf_json = "surf.json"
 reac_json = "reaction_energy.json"
 # argvs = sys.argv
@@ -35,31 +39,34 @@ numdata = len(df)
 # parameters
 #
 numuse     = int(numdata * 1.0)
-nclass     = 10
+nclass     = 10   # 3 --- uniform distribution.  15,20 --- not good atomic numbers
 log_dir    = "./log"
-numepochs  = 200
+numepochs  = 500  # 500 seems better than 200
 printnum   = 50
-batch_size = 30
+batch_size = 50 # 50 is better than 30
 z_dim      = 100
 lr         = 1.0e-3
-adam_b1    = 0.5
-adam_b2    = 0.999
+b1         = 0.5
+b2         = 0.999
 scaler     = StandardScaler()
 #
 # cleanup old logdir
 #
-if os.path.exists(log_dir):
-    files = glob.glob(os.path.join(log_dir, "*.png"))
-    for f in files:
-        os.remove(f)
-else:
-    os.makedirs(log_dir)
+cleanlog   = False
+
+if cleanlog:
+    if os.path.exists(log_dir):
+        files = glob.glob(os.path.join(log_dir, "*"))
+        for f in files:
+            os.remove(f)
+    else:
+        os.makedirs(log_dir)
 #
 # divide into groups according to reaction energy
 #
 rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank
-print(df.head(numuse // 2 + 1))
+#print(df.head(numuse // 2 + 1))
 
 
 def make_dataloader(x=None, y=None, batch_size=10):
@@ -85,9 +92,9 @@ def make_dataloader(x=None, y=None, batch_size=10):
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride  = 2
+nstride  = 3
 natom = len(df.iloc[0]["atomic_numbers"])
-nrun = df["run"].max()
+nrun  = df["run"].max()
 
 
 class Discriminator(nn.Module):
@@ -97,11 +104,12 @@ class Discriminator(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv = nn.Sequential(
-            ## CNN-like --> currently not using
-            nn.Conv1d(1 + nclass, nchannel, kernel_size=4, stride=nstride, padding=1),
-            nn.BatchNorm1d(nchannel),
+
+            ## CNN-like
+            nn.Conv1d(1 + nclass, 2*nchannel, kernel_size=3, stride=nstride, padding=1),
+            nn.BatchNorm1d(2*nchannel),
             nn.LeakyReLU(0.2),
-            nn.Conv1d(nchannel, nchannel, kernel_size=1, stride=1, padding=0),
+            nn.Conv1d(2*nchannel, nchannel, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm1d(nchannel),
             nn.LeakyReLU(0.2),
         )
@@ -110,23 +118,23 @@ class Discriminator(nn.Module):
             nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-            nn.Linear(2*nchannel, 3*nchannel),  # 3*nchannel --> 2*nchannel does'nt work?
-            nn.BatchNorm1d(3*nchannel),  # need
+            nn.Linear(2*nchannel, 2*nchannel),
+            nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-            nn.Linear(3*nchannel, 1),
+			# bad
+            #nn.Linear(2*nchannel, 2*nchannel),
+            #nn.BatchNorm1d(2*nchannel),  # need
+            #nn.LeakyReLU(0.2),  # need
 
-            #nn.Linear(natom // nstride * nchannel, 2 * nchannel),
-            #nn.BatchNorm1d(2 * nchannel),  # seems unnecessary
-            #nn.LeakyReLU(0.2),
-            #nn.Linear(2 * nchannel, 1),
+            nn.Linear(2*nchannel, 1),
 
             nn.Sigmoid(),
         )
 
     def forward(self, input):
-        # x = self.conv(input)
-        x = input
+        #x = self.conv(input)
+        x = input  # when skipping conv
         x = x.view(batch_size, -1)
         x = self.fc(x)
         return x
@@ -149,14 +157,19 @@ class Generator(nn.Module):
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            # adding this part is better
+			# 2*n --> 10*n not good with MLP-based D
             nn.Linear(2*n_feature, 2*n_feature),
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
-            # not really helpful
-            #nn.Linear(2 * n_feature, 2 * n_feature),
-            #nn.BatchNorm1d(2 * n_feature),
+			# good with 2n. 4n is not good
+            nn.Linear(2*n_feature, 2*n_feature),
+            nn.BatchNorm1d(2*n_feature),
+            nn.ReLU(),
+
+			# bad
+            #nn.Linear(2*n_feature, 2*n_feature),
+            #nn.BatchNorm1d(2*n_feature),
             #nn.ReLU(),
 
             nn.Linear(2*n_feature, natom),
@@ -200,8 +213,8 @@ criterion = nn.MSELoss()
 D = Discriminator().to(device)
 G = Generator().to(device)
 
-D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(adam_b1, adam_b2))
-G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(adam_b1, adam_b2))
+D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(b1, b2))
+G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(b1, b2))
 #
 # load state
 #
@@ -270,7 +283,7 @@ def generate(G, target=0):
     z = torch.rand(batch_size, z_dim, 1, device=device)
     z_label = concat_vector_label(z, target, nclass, device)
     fake = G(z_label)
-    fake = fake.detach().numpy()
+    fake = fake.detach().cpu().numpy()
     fake = scaler.inverse_transform(fake)
     return fake
 
@@ -291,7 +304,7 @@ def gan(numepochs=100):
     plt.plot(range(numepochs), history["D_loss"], "r-", label="Discriminator loss")
     plt.plot(range(numepochs), history["G_loss"], "b-", label="Generator loss")
     plt.legend()
-    plt.savefig(os.path.join(log_dir, "loss.png"))
+    plt.savefig(os.path.join(log_dir, "loss%03d.png" % nrun))
     plt.close()
 
 
