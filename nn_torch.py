@@ -134,7 +134,8 @@ class Discriminator(nn.Module):
 
 class Generator(nn.Module):
     #
-    # generate atomic number sequence that seems to be stable
+    # generate atomic number sequence that gives
+    # desirable property (e.g. reaction energy)
     #
     def __init__(self):
         super().__init__()
