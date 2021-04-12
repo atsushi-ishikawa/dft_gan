@@ -52,7 +52,7 @@ log_dir = "./log"
 #
 # cleanup old logdir
 #
-cleanlog = True
+cleanlog = False
 if cleanlog:
 	if os.path.exists(log_dir):
 		files = glob.glob(os.path.join(log_dir, "*"))
@@ -87,13 +87,12 @@ def make_dataloader(x=None, y=None, batch_size=10):
 
 	return dataloader
 
-
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride = 3
+nstride  = 3
 natom = len(df.iloc[0]["atomic_numbers"])
-nrun = df["run"].max()
+nrun  = df["run"].max()
 
 
 class Discriminator(nn.Module):
@@ -219,8 +218,8 @@ G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(b1, b2))
 #
 D_file = os.path.join(log_dir, "D_last.pth")
 G_file = os.path.join(log_dir, "G_last.pth")
-load_checkpoint(D, D_opt, D_file)
-load_checkpoint(G, G_opt, G_file)
+load_checkpoint(D, D_opt, D_file, device)
+load_checkpoint(G, G_opt, G_file, device)
 
 
 def train(D, G, criterion, D_opt, G_opt, dataloader):
@@ -354,7 +353,7 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
 check = False
-write = True
+write = False
 db = connect(surf_json)  # add to existing file
 
 for sample in samples:
