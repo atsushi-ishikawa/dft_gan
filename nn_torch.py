@@ -181,10 +181,10 @@ class Generator(nn.Module):
 		return x
 
 
-def load_checkpoint(model, optimizer, filename):
+def load_checkpoint(model, optimizer, filename, device):
 	if os.path.isfile(filename):
 		print("=> loading checkpoint '{}'".format(filename))
-		checkpoint = torch.load(filename)
+		checkpoint = torch.load(filename, map_location=device)
 		model.load_state_dict(checkpoint["state_dict"])
 		optimizer.load_state_dict(checkpoint["optimizer"])
 	else:
