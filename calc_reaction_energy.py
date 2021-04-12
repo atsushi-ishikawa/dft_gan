@@ -57,7 +57,7 @@ for id in range(1, numdata):
 
 	try:
 		#
-		# search for old file
+		# search deltaE from existing file
 		#
 		deltaE = df_reac.loc[unique_id].reaction_energy
 	except:
