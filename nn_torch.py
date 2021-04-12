@@ -52,7 +52,7 @@ log_dir = "./log"
 #
 # cleanup old logdir
 #
-cleanlog = False
+cleanlog = True
 if cleanlog:
 	if os.path.exists(log_dir):
 		files = glob.glob(os.path.join(log_dir, "*"))
