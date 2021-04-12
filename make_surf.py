@@ -13,7 +13,7 @@ calc = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.3*natoms)  # 5
+max_replace = int(0.3 * natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
 elementlist = ["Pt"]
 
@@ -21,7 +21,7 @@ outjson = "surf.json"
 
 # remove old one
 if os.path.exists(outjson):
-    os.remove(outjson)
+	os.remove(outjson)
 
 argvs = sys.argv
 num_data = int(argvs[1])
@@ -33,30 +33,30 @@ check = False  # check structure or not
 # shuffle
 #
 for i in range(num_data):
-    #
-    # make shuffled surface
-    #
-    surf_copy = surf.copy()
+	#
+	# make shuffled surface
+	#
+	surf_copy = surf.copy()
 
-    # how many atoms to replace?
-    num_replace = random.choice(range(1, max_replace + 1))
+	# how many atoms to replace?
+	num_replace = random.choice(range(1, max_replace + 1))
 
-    data = {}
-    # replace element
-    for iatom in range(num_replace):
-        surf_copy[iatom].symbol = random.choice(elementlist)
+	data = {}
+	# replace element
+	for iatom in range(num_replace):
+		surf_copy[iatom].symbol = random.choice(elementlist)
 
-    # get element atomic_numbers
-    atomic_numbers = surf_copy.get_atomic_numbers()
-    # shuffle element atomic_numbers
-    np.random.shuffle(atomic_numbers)
-    # set new element atomic_numbers
-    surf_copy.set_atomic_numbers(atomic_numbers)
-    formula = surf_copy.get_chemical_formula()
+	# get element atomic_numbers
+	atomic_numbers = surf_copy.get_atomic_numbers()
+	# shuffle element atomic_numbers
+	np.random.shuffle(atomic_numbers)
+	# set new element atomic_numbers
+	surf_copy.set_atomic_numbers(atomic_numbers)
+	formula = surf_copy.get_chemical_formula()
 
-    surf_copy.set_calculator(calc)
+	surf_copy.set_calculator(calc)
 
-    if check: view(surf_copy)
+	if check: view(surf_copy)
 
-    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
-    db.write(surf_copy, data=data)
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+	db.write(surf_copy, data=data)

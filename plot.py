@@ -28,19 +28,19 @@ df3 = df3.reset_index()
 
 
 def norm(run):
-    return (run - runmin) / (runmax - runmin)
+	return (run - runmin) / (runmax - runmin)
 
 
 plt.figure(figsize=(18, 6))
 colormap = plt.cm.viridis_r
-for i in range(runmax+1):
-    current = df3[df3["run"] == i]
-    pos = current.index.values
-    val = current.reaction_energy
-    color = "grey" if i == 0 else colormap(norm(i))
-    label = "run %2d" % i
-    plt.bar(pos, val, color=color, label=label, width=0.8, alpha=0.5)
+for i in range(runmax + 1):
+	current = df3[df3["run"]==i]
+	pos = current.index.values
+	val = current.reaction_energy
+	color = "grey" if i==0 else colormap(norm(i))
+	label = "run %2d" % i
+	plt.bar(pos, val, color=color, label=label, width=0.8, alpha=0.5)
 
-plt.ylim([minval-0.01, maxval+0.01])
+plt.ylim([minval - 0.01, maxval + 0.01])
 plt.legend()
 plt.savefig(os.path.join(log_dir, "bars%03d.png" % runmax))
