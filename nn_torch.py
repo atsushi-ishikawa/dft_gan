@@ -14,6 +14,10 @@ from ase.visualize import view
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device is %s" % device)
 
+# set random number seed
+seed = 0
+torch.manual_seed(seed)
+
 surf_json = "surf.json"
 reac_json = "reaction_energy.json"
 # argvs = sys.argv
@@ -38,7 +42,7 @@ nclass     = 10   # 3 --- uniform distribution.  15,20 --- not good atomic numbe
 log_dir    = "./log"
 numepochs  = 500  # 500 seems better than 200
 printnum   = 50
-batch_size = 30
+batch_size = 50 # 50 is better than 30
 z_dim      = 100
 lr         = 1.0e-3
 b1         = 0.5
@@ -58,7 +62,7 @@ if cleanlog:
 #
 rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank
-print(df.head(numuse // 2 + 1))
+#print(df.head(numuse // 2 + 1))
 
 
 def make_dataloader(x=None, y=None, batch_size=10):
@@ -84,7 +88,7 @@ def make_dataloader(x=None, y=None, batch_size=10):
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
-nstride = 2
+nstride = 3
 natom = len(df.iloc[0]["atomic_numbers"])
 nrun = df["run"].max()
 
@@ -97,10 +101,10 @@ class Discriminator(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             ## CNN-like
-            nn.Conv1d(1 + nclass, nchannel, kernel_size=4, stride=nstride, padding=1),
-            nn.BatchNorm1d(nchannel),
+            nn.Conv1d(1 + nclass, 2*nchannel, kernel_size=3, stride=nstride, padding=1),
+            nn.BatchNorm1d(2*nchannel),
             nn.LeakyReLU(0.2),
-            nn.Conv1d(nchannel, nchannel, kernel_size=1, stride=1, padding=0),
+            nn.Conv1d(2*nchannel, nchannel, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm1d(nchannel),
             nn.LeakyReLU(0.2),
         )
@@ -113,7 +117,7 @@ class Discriminator(nn.Module):
             nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
 
-			# good prediction but bad atomic_numbers
+			# bad
             #nn.Linear(2*nchannel, 2*nchannel),
             #nn.BatchNorm1d(2*nchannel),  # need
             #nn.LeakyReLU(0.2),  # need
@@ -124,8 +128,8 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, input):
-        # x = self.conv(input)
-        x = input
+        #x = self.conv(input)
+        x = input  # when skipping conv
         x = x.view(batch_size, -1)
         x = self.fc(x)
         return x
@@ -147,6 +151,7 @@ class Generator(nn.Module):
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
 
+			# 2*n --> 10*n not good with MLP-based D
             nn.Linear(2*n_feature, 2*n_feature),
             nn.BatchNorm1d(2*n_feature),
             nn.ReLU(),
