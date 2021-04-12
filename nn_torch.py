@@ -32,28 +32,27 @@ df2 = pd.read_json(reac_json)
 
 df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
-df = pd.concat([df1, df2], axis=1)
-df = df.sort_values("reaction_energy")
+df  = pd.concat([df1, df2], axis=1)
+df  = df.sort_values("reaction_energy")
 numdata = len(df)
 #
 # parameters
 #
-numuse = int(numdata * 1.0)
-nclass = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-log_dir = "./log"
-numepochs = 500  # 500 seems better than 200
-printnum = 50
+numuse     = int(numdata * 1.0)
+nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
+numepochs  = 500  # 500 seems better than 200
+printnum   = 50
 batch_size = 50  # 50 is better than 30
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
 b2 = 0.999
-scaler = StandardScaler()
+scaler  = StandardScaler()
+log_dir = "./log"
 #
 # cleanup old logdir
 #
 cleanlog = False
-
 if cleanlog:
 	if os.path.exists(log_dir):
 		files = glob.glob(os.path.join(log_dir, "*"))
@@ -67,9 +66,7 @@ if cleanlog:
 rank = pd.qcut(df.reaction_energy, nclass, labels=False)
 df["rank"] = rank
 
-
 # print(df.head(numuse // 2 + 1))
-
 
 def make_dataloader(x=None, y=None, batch_size=10):
 	import numpy as np
