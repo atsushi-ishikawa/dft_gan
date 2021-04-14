@@ -34,13 +34,18 @@ df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 df  = df.sort_values("reaction_energy")
+#
+# droping NaN in atomic numbers
+#
+df = df.dropna(subset=["atomic_numbers"])
 numdata = len(df)
+print("numdata: %d" % numdata)
 #
 # parameters
 #
 numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-numepochs  = 500  # 500 seems better than 200
+numepochs  = 400  # 500 seems better than 200
 printnum   = 50
 batch_size = 50  # 50 is better than 30
 z_dim = 100
@@ -102,8 +107,7 @@ class Discriminator(nn.Module):
 	def __init__(self):
 		super().__init__()
 		self.conv = nn.Sequential(
-
-			## CNN-like
+			## CNN-like --> not using now
 			nn.Conv1d(1 + nclass, 2 * nchannel, kernel_size=3, stride=nstride, padding=1),
 			nn.BatchNorm1d(2 * nchannel),
 			nn.LeakyReLU(0.2),
@@ -116,14 +120,10 @@ class Discriminator(nn.Module):
 			nn.BatchNorm1d(2 * nchannel),  # need
 			nn.LeakyReLU(0.2),  # need
 
-			nn.Linear(2 * nchannel, 2 * nchannel),
-			nn.BatchNorm1d(2 * nchannel),  # need
-			nn.LeakyReLU(0.2),  # need
-
-			# bad
-			# nn.Linear(2*nchannel, 2*nchannel),
-			# nn.BatchNorm1d(2*nchannel),  # need
-			# nn.LeakyReLU(0.2),  # need
+			# deleting this section --> fine
+			#nn.Linear(2 * nchannel, 2 * nchannel),
+			#nn.BatchNorm1d(2 * nchannel),  # need
+			#nn.LeakyReLU(0.2),  # need
 
 			nn.Linear(2 * nchannel, 1),
 
@@ -165,10 +165,10 @@ class Generator(nn.Module):
 			nn.BatchNorm1d(2 * n_feature),
 			nn.ReLU(),
 
-			# bad
-			# nn.Linear(2*n_feature, 2*n_feature),
-			# nn.BatchNorm1d(2*n_feature),
-			# nn.ReLU(),
+			# test
+			nn.Linear(2*n_feature, 2*n_feature),
+			nn.BatchNorm1d(2*n_feature),
+			nn.ReLU(),
 
 			nn.Linear(2 * n_feature, natom),
 		)
@@ -353,12 +353,12 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
 check = False
-write = False
-db = connect(surf_json)  # add to existing file
+write = True
+db = connect(surf_json, type="json")  # add to existing file
 
 for sample in samples:
 	surf.set_atomic_numbers(sample)
-	atomic_numbers = surf.get_atomic_numbers()
+	atomic_numbers = list(surf.get_atomic_numbers())  # make non-numpy
 	formula = surf.get_chemical_formula()
 
 	print("formula: ", surf.get_chemical_formula())
