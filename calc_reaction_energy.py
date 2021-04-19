@@ -23,7 +23,7 @@ else:
 	df_reac = pd.read_json(reac_json)
 	df_reac = df_reac.set_index("unique_id")
 
-db1 = connect(surf_json)
+db1  = connect(surf_json)
 calc = EMT()
 
 numdata = db1.count() + 1
@@ -57,20 +57,24 @@ for id in range(1, numdata):
 		# search deltaE from existing file
 		#
 		deltaE = df_reac.loc[unique_id].reaction_energy
-		print("%s %f" % (unique_id, deltaE))
 	except:
 		#
-		# not found -- calculate here
+		# not found
 		#
-		print("reaction enegy not found: %s" % unique_id)
 		try:
+			# check whether calculating or not
 			status = df_reac.loc[unique_id]["status"]
-			if status=="doing":
+			if status == "doing":
 				print("somebody doing for %s" % unique_id)
 				continue
 		except:
+			#
+			# no record at all --- calculate here
+			#
 			data = {"unique_id": unique_id, "status": "doing"}
-			print(" --- writing to json ---")
+			#
+			# updating and writing to json 
+			#
 			with open(reac_json, "r") as f:
 				datum = json.load(f)
 				datum.append(data)
@@ -102,6 +106,8 @@ for id in range(1, numdata):
 			data = {"unique_id": unique_id, "reaction_energy": deltaE, "status": "done"}
 			with open(reac_json, "r") as f:
 				datum = json.load(f)
+
+				#  remove "doing" record as calculation is done
 				for i in range(len(datum)):
 					if datum[i]["unique_id"] == unique_id:
 						datum.pop(i)
