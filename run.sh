@@ -36,7 +36,7 @@ max=10
 for (( i=1 ; i<=$max; i++ )) ; do
 	echo "--------------- run = " $i "/" $max "---------------"
 	touch "doing_GAN"
-	python nn_torch.py
+	python nn_reac.py
 	rm "doing_GAN"
 	touch "doing_reaction_energy_calc"
 	python calc_reaction_energy.py
