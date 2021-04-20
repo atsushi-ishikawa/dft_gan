@@ -7,15 +7,19 @@ import os
 import sys
 import random
 
-surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
-calc = EMT()
+# lattice constant
+a = {"Rh": 3.80}
+
+surf  = fcc111(symbol="Rh", size=[3, 3, 4], a=a["Rh"], vacuum=10.0)
+check = False # check structure or not
+calc  = EMT()
 #
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
 max_replace = int(0.3 * natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-elementlist = ["Pt"]
+elementlist = ["Ir"]
 
 outjson = "surf.json"
 
@@ -27,11 +31,10 @@ argvs = sys.argv
 num_data = int(argvs[1])
 
 db = connect(outjson)
-
-check = False  # check structure or not
 #
 # shuffle
 #
+id = 1
 for i in range(num_data):
 	#
 	# make shuffled surface
@@ -58,5 +61,12 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
+<<<<<<< HEAD:make_surf.py
 	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
+=======
+    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+    db.write(surf_copy, data=data)
+    db.update(id, status="reaction_energy_not_done")
+    id += 1
+>>>>>>> whisky:make_surf2.py
