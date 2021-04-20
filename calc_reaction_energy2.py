@@ -13,8 +13,9 @@ import pandas as pd
 import numpy as np
 import argparse
 import shutil
+import socket
 
-clean = False
+clean = True
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
@@ -41,33 +42,35 @@ else:
     except:
         pass
 
+print("hostname: ", socket.gethostname())
+
 db1 = connect(surf_json)
-steps = 50  # maximum number of geomtry optimization steps
+steps = 100  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec = "normal"
     xc   = "beef-vdw"
     ivdw = 0
     nsw  = 0
-    nelm   = 50
+    nelm   = 60
     ibrion = -1
     algo = "VeryFast"
-    efiff  = 1.0e-5
+    ediff  = 1.0e-4
     ediffg = ediff*0.1
-    kpts_mol  = [1, 1, 1]
-    kpts_surf = [3, 3, 1]
+    kpts   = [2, 2, 1]
+    ispin  = 2
     kgamma = True
-    pp    = "potpaw_PBE.54"
-    npar  = 12
-    nsim  = npar
-    kpar  = 1
-    isym  = 0
-    lreal = True
+    pp     = "potpaw_PBE.54"
+    npar   = 12
+    nsim   = npar
+    kpar   = 1
+    isym   = 0
+    lreal  = True
 
     calc_mol  = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion ,nsw=nsw, nelm=nelm,
-                     kpts=kpts_mol,  kgamma=kgamma, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
+                     kpts=[1, 1, 1],  kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
     calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion ,nsw=nsw, nelm=nelm,
-                     kpts=kpts_surf, kgamma=kgamma, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
+                     kpts=kpts, kgamma=kgamma, ispin=2, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
 else:
     calc_mol  = EMT()
     calc_surf = EMT()
@@ -120,9 +123,9 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 	#
     if calc.name.lower() == "vasp":
         calc.int_params["ibrion"] = -1
-        calc.int_params["nsw"] = 0
+        calc.int_params["nsw"]    =  0
+        calc.int_params["isif"]   =  2
         atoms.set_calculator(calc)
-
 #
 # loop over surfaces
 #
@@ -179,15 +182,35 @@ for id in range(1, numdata):
         #
         # surface + adsorbate
         #
-        add_adsorbate(surf, prod1, offset=(0.3, 0.3), height=1.3)
-        #add_adsorbate(surf, prod2, offset=(0.6, 0.6), height=1.3)
-        #
+        offset = (0.20, 0.20)  # for [3, 3] supercell
+        #offset = (0.30, 0.30)  # for [4, 4] supercell
+
+        #offsets = [[0.215, 0.215], [0.430, 0.430]]
+        offsets = [[0.22, 0.22], [0.44, 0.44]]
+
+        iads = 0
+        Es = []
+        surfcopies = []
         print(" --- calculating %s ---" % surf.get_chemical_formula())
-        #
-        label = surf.get_chemical_formula() + "_" + unique_id
-        set_calculator_with_label(surf, calc_surf, label=label)
-        run_optimizer(surf, fmax=0.1, steps=steps)
-        Eprod_surf = surf.get_potential_energy()
+        for offset in offsets:
+            surfcopy = surf.copy()
+            add_adsorbate(surfcopy, prod1, offset=offset,   height=1.3)
+            #add_adsorbate(surf, prod2, offset=offset*2, height=1.3)
+
+            label = surfcopy.get_chemical_formula() + "_" + unique_id + "_" + str(iads).zfill(2)
+            set_calculator_with_label(surfcopy, calc_surf, label=label)
+            run_optimizer(surfcopy, fmax=0.1, steps=steps)
+            E = surfcopy.get_potential_energy()
+            surfcopies.append(surfcopy)
+            Es.append(E)
+            iads += 1
+
+        min_idx = np.argmin(np.array(Es))
+        print("Es", Es)
+        print("most stable adsorption is %dth" % min_idx)
+        surf = surfcopies[min_idx]
+        #Eprod_surf = surf.get_potential_energy()
+        Eprod_surf = Es[min_idx]
         if clean: shutil.rmtree(label)
 
         Ereactant = Esurf + 0.5*Ereac
