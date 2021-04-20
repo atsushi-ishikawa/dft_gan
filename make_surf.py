@@ -61,12 +61,7 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
-<<<<<<< HEAD:make_surf.py
 	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
-=======
-    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
-    db.write(surf_copy, data=data)
     db.update(id, status="reaction_energy_not_done")
     id += 1
->>>>>>> whisky:make_surf2.py
