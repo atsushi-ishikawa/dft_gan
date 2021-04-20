@@ -107,7 +107,7 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
         calc.int_params["ibrion"]  = 2
         calc.int_params["nsw"]     = steps
         calc.input_params["potim"] = 0.1
-        calc.exp_params["ediffg"] = -fmax  # force based
+        calc.exp_params["ediffg"]  = -fmax  # force based
         if optimize_unitcell:
             calc.int_params["isif"] = 4
             calc.exp_params["ediffg"] = ediff*0.1  # energy based
