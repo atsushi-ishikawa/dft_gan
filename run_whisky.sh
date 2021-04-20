@@ -4,7 +4,7 @@
 #$ -cwd
 #$ -q all.q
 #$ -pe openmpi24 24
-#$ -l hostname=whisky2?
+#$ -l hostname=whisky1?
 
 # clean
 #rm *.{e,o}[0-9]*
