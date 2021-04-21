@@ -45,40 +45,48 @@ else:
 print("hostname: ", socket.gethostname())
 
 db1 = connect(surf_json)
-steps = 100  # maximum number of geomtry optimization steps
+steps = 2  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
-	prec = "normal"
-	xc = "beef-vdw"
-	ivdw = 0
-	nsw = 0
-	nelm = 60
+	prec   = "normal"
+	#xc    = "beef-vdw"
+	xc     = "pbe"
+	ivdw   = 0
+	nsw    = 0
+	nelm   = 30
 	ibrion = -1
-	algo = "VeryFast"
-	ediff = 1.0e-4
+	algo   = "VeryFast"
+	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
-	kpts = [2, 2, 1]
-	ispin = 2
+	kpts   = [1, 1, 1]
+	ispin  = 1
 	kgamma = True
-	pp = "potpaw_PBE.54"
-	npar = 12
-	nsim = npar
-	kpar = 1
-	isym = 0
-	lreal = True
+	pp     = "potpaw_PBE.54"
+	npar   = 6
+	nsim   = npar
+	kpar   = 1
+	isym   = 0
+	lreal  = True
+	lwave  = False
+	lcharg = False
+
+	optimize_unitcell = False
+
 
 	calc_mol = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-		kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
+					kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal, 
+					lwave=lwave, lcharg=lcharg)
 	calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-		kpts=kpts, kgamma=kgamma, ispin=2, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal)
+					kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal, 
+					lwave=lwave, lcharg=lcharg)
 else:
-	calc_mol = EMT()
+	calc_mol  = EMT()
 	calc_surf = EMT()
 
-numdata = db1.count() + 1
+#numdata = db1.count() + 1
+numdata = db1.count()
 
 check = False
-
 
 def set_unitcell(Atoms, vacuum=10.0):
 	import numpy as np
@@ -104,10 +112,10 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		opt.run(fmax=fmax, steps=steps)
 	elif calc.name.lower() == "vasp":
 		# VASP
-		calc.int_params["ibrion"] = 2
-		calc.int_params["nsw"] = steps
+		calc.int_params["ibrion"]  = 2
+		calc.int_params["nsw"]     = steps
 		calc.input_params["potim"] = 0.1
-		calc.exp_params["ediffg"] = -fmax  # force based
+		calc.exp_params["ediffg"]  = -fmax  # force based
 		if optimize_unitcell:
 			calc.int_params["isif"] = 4
 			calc.exp_params["ediffg"] = ediff * 0.1  # energy based
@@ -127,13 +135,12 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		calc.int_params["isif"] = 2
 		atoms.set_calculator(calc)
 
-
 #
 # loop over surfaces
 #
 for id in range(1, numdata):
 	surf = db1.get_atoms(id=id)
-	obj = db1[id]
+	obj  = db1[id]
 	data = obj.data
 	unique_id = obj["unique_id"]
 	status = obj.status
@@ -178,7 +185,7 @@ for id in range(1, numdata):
 
 		label = surf.get_chemical_formula() + "_" + unique_id
 		set_calculator_with_label(surf, calc_surf, label=label)
-		run_optimizer(surf, fmax=0.1, steps=steps, optimize_unitcell=True)
+		run_optimizer(surf, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
 		Esurf = surf.get_potential_energy()
 		if clean: shutil.rmtree(label)
 		#
