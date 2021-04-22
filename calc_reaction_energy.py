@@ -72,13 +72,12 @@ if "vasp" in calculator:
 
 	optimize_unitcell = False
 
-
-	calc_mol = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-					kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal, 
-					lwave=lwave, lcharg=lcharg)
+	calc_mol  = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
+					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
+					 lwave=lwave, lcharg=lcharg)
 	calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-					kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal, 
-					lwave=lwave, lcharg=lcharg)
+					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
+					 lwave=lwave, lcharg=lcharg)
 else:
 	calc_mol  = EMT()
 	calc_surf = EMT()
