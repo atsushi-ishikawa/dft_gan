@@ -8,9 +8,9 @@ import sys
 import random
 
 # lattice constant
-a = {"Rh": 3.80}
+elem = {"symbol": "Pt", "a": 3.90}
 
-surf  = fcc111(symbol="Rh", size=[3, 3, 4], a=a["Rh"], vacuum=10.0)
+surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
 check = False # check structure or not
 calc  = EMT()
 #
@@ -19,7 +19,7 @@ calc  = EMT()
 natoms = len(surf.get_atomic_numbers())
 max_replace = int(0.3 * natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-elementlist = ["Ir"]
+elem2 = ["Rh"]
 
 outjson = "surf.json"
 
@@ -47,7 +47,7 @@ for i in range(num_data):
 	data = {}
 	# replace element
 	for iatom in range(num_replace):
-		surf_copy[iatom].symbol = random.choice(elementlist)
+		surf_copy[iatom].symbol = random.choice(elem2)
 
 	# get element atomic_numbers
 	atomic_numbers = surf_copy.get_atomic_numbers()
@@ -63,5 +63,6 @@ for i in range(num_data):
 
 	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
-    db.update(id, status="reaction_energy_not_done")
-    id += 1
+	#db.update(id, status="reaction_energy_not_done")
+	id += 1
+
