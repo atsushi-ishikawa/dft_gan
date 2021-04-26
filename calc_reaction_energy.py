@@ -17,26 +17,27 @@ import argparse
 import shutil
 import socket
 
-
 clean = True
 savefig = False
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--id")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
-parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
-parser.add_argument("--reac_json", default="reaction_energy.json", help="json for writing reaction energies")
+parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json",  default="reaction_energy.json", help="json for writing reaction energies")
 
 args = parser.parse_args()
+unique_id  = args.id
 calculator = args.calculator.lower()
-surf_json = args.surf_json
-reac_json = args.reac_json
+surf_json  = args.surf_json
+reac_json  = args.reac_json
 
 # molecule collection from ase
 collection = g2
 
 # remove old one
-if os.path.exists(reac_json):
-	os.remove(reac_json)
+#if os.path.exists(reac_json):
+#	os.remove(reac_json)
 
 if not os.path.isfile(reac_json):
 	# reac_json does not exist -- make
@@ -125,7 +126,7 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		atoms.get_potential_energy()
 	else:
 		print("use vasp or emt. now ", calc.name)
-		sys.exit()
+		sys.exit(1)
 
 	print(" ------- geometry optimization finished ------- ")
 	#
@@ -157,7 +158,7 @@ def add_to_json(jsonfile, dict):
 	#
 	# add to database
 	#
-	with open(jsonfile) as f:
+	with open(jsonfile, "r") as f:
 	# remove "doing" record as calculation is done
 		datum = json.load(f)
 		for i in range(len(datum)):
@@ -188,124 +189,116 @@ rxn_num = get_number_of_reaction(reactionfile)
 #
 # loop over surfaces
 #
-for id in range(1, num_surf):
-	surf = db1.get_atoms(id=id)
-	obj  = db1[id]
-	data = obj.data
-	unique_id = obj["unique_id"]
+#for id in range(1, num_surf):
+#surf = db1.get_atoms(id=id)
+#obj  = db1[id]
+#data = obj.data
+#unique_id = obj["unique_id"]
+surf = db1.get_atoms(unique_id=unique_id)
 
-	try:
-		df_reac = pd.read_json(reac_json)
-		df_reac = df_reac.set_index("unique_id")
-	except:
-		# blanck json file --- going
-		pass
+try:
+	df_reac = pd.read_json(reac_json)
+	df_reac = df_reac.set_index("unique_id")
+except:
+	# blanck json file --- going
+	pass
 	
-	if unique_id in df_reac.index:
-		if "reaction_energy" in df_reac.loc[unique_id]:
-			deltaE  = df_reac.loc[unique_id].reaction_energy
-			continue
-		elif df_reac.loc[unique_id]["status"] == "doing":
-			continue
+if unique_id in df_reac.index:
+	if "reaction_energy" in df_reac.loc[unique_id]:
+		deltaE = df_reac.loc[unique_id].reaction_energy
+		print("already done")
+		sys.exit(0)
+	elif df_reac.loc[unique_id]["status"] == "doing":
+		print("somebody is doing")
+		sys.exit(0)
+ 
+# no one is doing this system ... calculate here
+with open(reac_json, "r") as f:
+	datum = json.load(f)
+	data  = {"unique_id": unique_id, "status": "doing"}
+	datum.append(data)
+with open(reac_json, "w") as f:
+	json.dump(datum, f, indent=4)
 
-	# no one is doing this system ... calculate here
-	with open(reac_json, "r") as f:
-		datum = json.load(f)
-		data  = {"unique_id": unique_id, "status": "doing"}
-		datum.append(data)
-	with open(reac_json, "w") as f:
-		json.dump(datum, f, indent=4)
+deltaE = np.array([])
+for irxn in range(rxn_num):
+	print("irxn = %d" % irxn)
+	print(" --- calculating %s ---" % surf.get_chemical_formula())
 
-	deltaE = np.array([])
-	for irxn in range(rxn_num):
-		print("irxn = %d" % irxn)
-		print(" --- calculating %s ---" % surf.get_chemical_formula())
+	energies = {"reactant": 0.0, "product": 0.0}
 
-		energies = {"reactant": 0.0, "product": 0.0}
+	for side in ["reactant", "product"]:
+		if side == "reactant":
+			mols  = r_ads[irxn]
+			sites = r_site[irxn]
+			coefs = r_coef[irxn]
+		elif side == "product":
+			mols  = p_ads[irxn]
+			sites = p_site[irxn]
+			coefs = p_coef[irxn]
 
-		for side in ["reactant", "product"]:
-			if side == "reactant":
-				mols  = r_ads[irxn]
-				sites = r_site[irxn]
-				coefs = r_coef[irxn]
-			elif side == "product":
-				mols  = p_ads[irxn]
-				sites = p_site[irxn]
-				coefs = p_coef[irxn]
+		E = 0.0
+		for imol, mol in enumerate(mols):
+			if mol[0] == "surf":
+				chem = mol[0]
+			else:
+				chem = collection[mol[0]]
 
-			E = 0.0
-			for imol, mol in enumerate(mols):
-				if mol[0] == "surf":
-					chem = mol[0]
-				else:
-					chem = collection[mol[0]]
-				site = sites[imol][0]
-				mol_type = get_mol_type(chem, site)
+			site = sites[imol][0]
+			mol_type = get_mol_type(chem, site)
 
-				if mol_type == "gaseous":
-					#
-					# gas calculation
-					#
-					atoms = Atoms(chem)
-					if check: view(atoms)
-					set_unitcell_gasphase(atoms)
-					label = atoms.get_chemical_formula() + "_" + unique_id
-					set_calculator_with_label(atoms, calc_mol, label=label)
+			if mol_type == "gaseous":
+				# gas calculation
+				atoms = Atoms(chem)
+				if check: view(atoms)
+				set_unitcell_gasphase(atoms)
+				label = atoms.get_chemical_formula() + "_" + unique_id
+				set_calculator_with_label(atoms, calc_mol, label=label)
 
-				elif mol_type == "surf":
-					#	
-					# surface calculation
-					#
-					atoms = surf.copy()
-					if check: view(atoms)
-					nlayer = 4
-					nrelax = nlayer // 2
-					atoms = fix_lower_surface(atoms, nlayer, nrelax)
-					label = atoms.get_chemical_formula() + "_" + unique_id
-					set_calculator_with_label(atoms, calc_surf, label=label)
+			elif mol_type == "surf":
+				# surface calculation
+				atoms = surf.copy()
+				if check: view(atoms)
+				nlayer = 4
+				nrelax = nlayer // 2
+				atoms = fix_lower_surface(atoms, nlayer, nrelax)
+				label = atoms.get_chemical_formula() + "_" + unique_id
+				set_calculator_with_label(atoms, calc_surf, label=label)
 
-				elif mol_type == "adsorbed":
-					#
-					# adsorbate calculation
-					#
-					chem = collection[mol[0]]
-					formula = chem.get_chemical_formula()
-					chem.rotate(180, "y")
-					offset = (0.20, 0.20)  # for [3, 3] supercell
+			elif mol_type == "adsorbed":
+				# adsorbate calculation
+				chem = collection[mol[0]]
+				formula = chem.get_chemical_formula()
+				chem.rotate(180, "y")
+				offset = (0.20, 0.20)  # for [3, 3] supercell
 
-					atoms  = surf.copy()
-					add_adsorbate(atoms, chem, offset=offset, height=height)
-					label = atoms.get_chemical_formula() + "_" + unique_id + "_" + str(formula).zfill(2)
-					set_calculator_with_label(atoms, calc_surf, label=label)
+				atoms  = surf.copy()
+				add_adsorbate(atoms, chem, offset=offset, height=height)
+				label = atoms.get_chemical_formula() + "_" + unique_id + "_" + str(formula).zfill(2)
+				set_calculator_with_label(atoms, calc_surf, label=label)
 
-				else:
-					print("something wrong")
-					sys.exit()
+			else:
+				print("something wrong")
+				sys.exit(1)
 
-				print("now calculating %s" % atoms.get_chemical_formula())
-				run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
-				en = atoms.get_potential_energy()
-				E += coefs[imol]*en
-				if savefig:
-					savefig_atoms(atoms, "{0:s}_{1:03d}_{2:03d}_{3:03d}.png".format(side, id, irxn, imol))
-				if clean and "vasp" in calculator:
-					shutil.rmtree(label)
+			print("now calculating %s" % atoms.get_chemical_formula())
+			run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+			en = atoms.get_potential_energy()
+			E += coefs[imol]*en
+			if savefig:
+				savefig_atoms(atoms, "{0:s}_{1:03d}_{2:03d}_{3:03d}.png".format(side, id, irxn, imol))
+			if clean and "vasp" in calculator:
+				shutil.rmtree(label)
 
-			#energies[side] = coefs[0]*E
-			energies[side] = E
+		energies[side] = E
 
-		print("e_reac = %8.5e, e_prod = %8.5e" % (energies["reactant"], energies["product"]))
-		deltaE = np.append(deltaE, energies["product"] - energies["reactant"])
-
-	print(deltaE)
-	with open("deltaE.txt", "w") as f:
-		for i in deltaE:
-			f.write("%f\n" % i)
+	print("e_reac = %8.5e, e_prod = %8.5e" % (energies["reactant"], energies["product"]))
+	deltaE = np.append(deltaE, energies["product"] - energies["reactant"])
 	#
 	# done
 	#
-	#if check: view(surf)
+if check: view(surf)
 
-	data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done"}
-	add_to_json(reac_json, data)
+data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done"}
+add_to_json(reac_json, data)
 
