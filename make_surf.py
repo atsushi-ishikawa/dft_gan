@@ -19,7 +19,8 @@ calc  = EMT()
 natoms = len(surf.get_atomic_numbers())
 max_replace = int(0.3 * natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-elem2 = ["Rh"]
+#elem2 = ["Rh"]
+elem2 = ["Pd"]
 
 outjson = "surf.json"
 
@@ -61,7 +62,7 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+	data = {"chemical_formula": formula, "atomic_numbers": list(atomic_numbers), "run": 0}
 	db.write(surf_copy, data=data)
 	#db.update(id, status="reaction_energy_not_done")
 	id += 1
