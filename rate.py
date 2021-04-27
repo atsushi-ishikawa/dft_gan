@@ -7,7 +7,7 @@ from reaction_tools import get_number_of_reaction
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id")
-parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading rxn. energy and writing activity")
+parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading rxn. energy and writing rate")
 
 args = parser.parse_args()
 unique_id = args.id

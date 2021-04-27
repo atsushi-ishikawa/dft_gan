@@ -30,6 +30,7 @@ outfile   = "loss.h5"
 #
 # load data and put it to DataFrame
 #
+score = "rate"
 df1 = load_ase_json(surf_json)
 df2 = pd.read_json(reac_json)
 
@@ -37,7 +38,7 @@ df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 #df = df.sort_values("reaction_energy")
-df = df.sort_values("rate", ascending=False)
+df = df.sort_values(score, ascending=False)
 #
 # droping NaN in atomic numbers
 #
@@ -77,10 +78,9 @@ if cleanlog:
 	else:
 		os.makedirs(log_dir)
 #
-# divide into groups according to activity
+# divide into groups according to score
 #
-#rank = pd.qcut(df.reaction_energy, nclass, labels=False)
-rank = pd.qcut(df.rate, nclass, labels=False)
+rank = pd.qcut(df[score], nclass, labels=False)
 df["rank"] = rank
 
 # print(df.head(numuse // 2 + 1))
