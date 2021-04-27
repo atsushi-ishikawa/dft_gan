@@ -1,9 +1,12 @@
 #!/bin/bash
 
-script=run_whisky.sh
-maxnum=10
+cwd=`pwd`
+script=tmp.sh
+maxnum=100
+
 for ((i=0; i<$maxnum; i++)); do
-	qsub $script
-	sleep 20
+	#qsub $script
+	$cwd/$script
+	sleep 2
 done
 
