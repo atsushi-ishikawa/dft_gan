@@ -87,11 +87,12 @@ def plot_structure(n):
 		return html.H2("not yet")
 
 #
-# reaction energy bar plot from json file
+# score bar plot from json file
 #
 @app.callback(Output("graph_bar", "figure"),
              [Input("interval-component", "n_intervals")])
-def make_reaction_energy_bar(n):
+def make_score_bar(n):
+	score = "rate"
 	df1 = load_ase_json(surf_json)
 	df2 = pd.read_json(reac_json)
 
@@ -99,14 +100,14 @@ def make_reaction_energy_bar(n):
 	df2 = df2.set_index("unique_id")
 
 	df = pd.concat([df1, df2], axis=1)
-	df = df[df["reaction_energy"].notna()]
+	df = df[df[score].notna()]
 
 	runmax = df["run"].max()
 	runmin = df["run"].min()
-	maxval = df["reaction_energy"].max()
-	minval = df["reaction_energy"].min()
+	maxval = df[score].max()
+	minval = df[score].min()
 
-	df = df.sort_values("reaction_energy")
+	df = df.sort_values(score, ascending=False)
 	df = df.reset_index()
 
 	colors = get_colorpalette("viridis", runmax+1)
@@ -115,7 +116,7 @@ def make_reaction_energy_bar(n):
 	for i in range(runmax + 1):
 		now = df[df["run"]==i]
 		x = now.index.values
-		y = now.reaction_energy
+		y = now[score]
 		formula = now.chemical_formula
 		color = "crimson" if i==runmax else colors[i]
 		opacity = 0.2 if i==0 else 1.0

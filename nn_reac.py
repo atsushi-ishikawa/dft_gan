@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import matplotlib.pyplot as plt
 import h5py
 import numpy as np
-
+import argparse
 from ase.build import fcc111
 from ase.visualize import view
 
@@ -20,12 +20,25 @@ print("device is %s" % device)
 seed = 0
 torch.manual_seed(seed)
 
-surf_json = "surf.json"
-reac_json = "reaction_energy.json"
-outfile   = "loss.h5"
-# argvs = sys.argv
-# surface_data = str(argvs[1])
-# reaction_data = str(argvs[2])
+parser = argparse.ArgumentParser()
+parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
+parser.add_argument("--loss_file", default="loss.h5", help="output file for generator and descriminator losses")
+
+args = parser.parse_args()
+surf_json = args.surf_json
+reac_json = args.reac_json
+loss_file = args.loss_file
+
+
+if not os.path.exists(loss_file):
+	# prepare loss h5 file if not exits
+	h5file = h5py.File(loss_file, "w")
+	h5file.create_dataset("epoch", (1,),  maxshape=(None, ), chunks=True, dtype="int")
+	h5file.create_dataset("D_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
+	h5file.create_dataset("G_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
+	h5file.flush()
+	h5file.close()
 
 #
 # load data and put it to DataFrame
@@ -37,8 +50,7 @@ df2 = pd.read_json(reac_json)
 df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
-#df = df.sort_values("reaction_energy")
-df = df.sort_values(score, ascending=False)
+df  = df.sort_values(score, ascending=False)
 #
 # droping NaN in atomic numbers
 #
@@ -65,18 +77,13 @@ if scaler_selection == "minmax":
 	scaler  = MinMaxScaler()  # makes (0,1) for binary system
 else:
 	scaler  = StandardScaler()
-log_dir = "./log"
+
 #
-# cleanup old logdir
+# make logdir if not exists
 #
-cleanlog = False
-if cleanlog:
-	if os.path.exists(log_dir):
-		files = glob.glob(os.path.join(log_dir, "*"))
-		for f in files:
-			os.remove(f)
-	else:
-		os.makedirs(log_dir)
+log_dir  = "./log"
+if not os.path.exists(log_dir):
+	os.makedirs(log_dir)
 #
 # divide into groups according to score
 #
@@ -104,9 +111,6 @@ def make_dataloader(x=None, y=None, batch_size=10):
 
 	return dataloader
 
-#element_num = {"Pd": 46, "Pt": 78}
-#test  = df.iloc[0]["atomic_numbers"]
-#test2 = list(map(lambda x: 1 if x==element_num["Pt"] else 0, test))
 
 dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
 
@@ -307,7 +311,7 @@ def gan(num_epoch=100):
 		if epoch != 0 and epoch % printnum == 0:
 			print("epoch = %3d, D_loss = %8.5f, G_loss = %8.5f" % (epoch, D_loss, G_loss))
 
-	with h5py.File(outfile, "a") as f:
+	with h5py.File(loss_file, "a") as f:
 		size_resize = int(f["epoch"].shape[0] + num_epoch)
 		f["epoch"].resize(size_resize,  axis=0)
 		f["D_loss"].resize(size_resize, axis=0)
@@ -316,13 +320,6 @@ def gan(num_epoch=100):
 		f["epoch"][:]  = list(range(size_resize))
 		f["D_loss"][-num_epoch:] = history["D_loss"]
 		f["G_loss"][-num_epoch:] = history["G_loss"]
-
-#	plt.figure()
-#	plt.plot(range(num_epoch), history["D_loss"], "r-", label="Discriminator loss")
-#	plt.plot(range(num_epoch), history["G_loss"], "b-", label="Generator loss")
-#	plt.legend()
-#	plt.savefig(os.path.join(log_dir, "loss%03d.png" % nrun))
-#	plt.close()
 
 
 def make_atomic_numbers(inputlist, reflist):
@@ -376,19 +373,19 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-surf = fcc111(symbol="Pd", size=[4, 4, 4], a=4.0, vacuum=10.0)
+surf = fcc111(symbol="Pd", size=[3, 3, 4], a=4.0, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
 
 for sample in samples:
 	surf.set_atomic_numbers(sample)
-	atomic_numbers = list(surf.get_atomic_numbers())  # make non-numpy
+	atomic_numbers = surf.get_atomic_numbers()
 	formula = surf.get_chemical_formula()
 
 	print("formula: ", surf.get_chemical_formula())
 	if check: view(surf)
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1}
+	data = {"chemical_formula": formula, "atomic_numbers": list(atomic_numbers), "run": nrun + 1}
 	#
 	# write candidate to file
 	#

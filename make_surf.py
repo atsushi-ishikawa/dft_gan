@@ -52,8 +52,11 @@ for i in range(num_data):
 
 	# get element atomic_numbers
 	atomic_numbers = surf_copy.get_atomic_numbers()
+	atomic_numbers = list(atomic_numbers)  # make non-numpy
+
 	# shuffle element atomic_numbers
 	np.random.shuffle(atomic_numbers)
+
 	# set new element atomic_numbers
 	surf_copy.set_atomic_numbers(atomic_numbers)
 	formula = surf_copy.get_chemical_formula()
@@ -62,8 +65,7 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
-	data = {"chemical_formula": formula, "atomic_numbers": list(atomic_numbers), "run": 0}
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
-	#db.update(id, status="reaction_energy_not_done")
 	id += 1
 

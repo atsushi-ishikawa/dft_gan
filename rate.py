@@ -13,15 +13,22 @@ args = parser.parse_args()
 unique_id = args.id
 reac_json = args.reac_json
 
+gas = {"N2": 0, "H2":1, "NH3": 2}
+ads = {"N" : 0, "H":1, "NH": 2, "NH2": 3, "NH3": 4, "vac": 5}
+
 # --------------------------
 reactionfile = "nh3.txt"
 rxn_num = get_number_of_reaction(reactionfile)
 
 # pressure in Pa
-p = {"N2": 1.0e5, "H2": 1.0e5, "NH3": 0.1e5}
+p = np.zeros(len(gas))
+conversion = 0.1
+p[gas["N2"]]  = 1.0e5
+p[gas["H2"]]  = p[gas["N2"]]*3.0
+p[gas["NH3"]] = p[gas["N2"]]*conversion
 
 # coverage
-theta  = np.zeros(rxn_num)
+theta  = np.zeros(len(ads))
 
 # reation energies and equilibrium constant
 df_reac = pd.read_json(reac_json)
@@ -52,26 +59,25 @@ RT = 8.314*300*1.0e-3*kJtoeV  # J/K * K
 k = np.exp(-Ea/RT)
 
 # coverage
-theta[0] = p["N2"] / K[0]
-theta[1] = p["N2"] / np.sqrt(K[1])
-theta[2] = p["N2"] / np.sqrt(K[2])
-theta[3] = p["N2"] / np.sqrt(K[3])
-theta[4] = p["N2"] / np.sqrt(K[4])
+tmp = 1 + np.sqrt(K[1]*p[gas["H2"]]) \
+		+ p[gas["NH3"]]/(np.sqrt(K[1]*p[gas["H2"]])*K[4]+K[5]) \
+		+ p[gas["NH3"]]/(K[1]*p[gas["H2"]]*K[3]*K[4]*K[5]) \
+		+ p[gas["NH3"]]/(K[1]**(3/2)*p[gas["H2"]]**(3/2)*K[2]*K[3]*K[4]*K[5]) \
+		+ p[gas["NH3"]]/K[5]
 
-sum = 0.0
-for i in range(len(theta)-1):
-	sum += theta[i]
-theta[-1] = 1 - sum
-	
-Keq = 1.0
-for i in range(rxn_num):
-	Keq *= K[i]
+theta[ads["vac"]] = 1/tmp
+theta[ads["H"]]   = np.sqrt(K[1]*p[gas["H2"]])*theta[ads["vac"]]
+theta[ads["NH3"]] = (p[gas["NH3"]]/K[5])*theta[ads["vac"]]
+theta[ads["NH2"]] = (p[gas["NH3"]]/(np.sqrt(K[1]*p[gas["H2"]])*K[4]*K[5]))*theta[ads["vac"]]
+theta[ads["NH"]]  = (p[gas["NH3"]]/(K[1]*p[gas["H2"]]*K[3]*K[4]*K[5]))*theta[ads["vac"]]
+theta[ads["N"]]   = (p[gas["NH3"]]/(K[1]**(3/2)*p[gas["H2"]]**(3/2)*K[2]*K[3]*K[4]*K[5]))*theta[ads["vac"]]
 
-gamma = (1/Keq)*(p["NH3"]**2/(p["N2"]*p["H2"]**3))
-rate  = k*p["N2"]*theta[-1]**2*(1-gamma)
+Keq     = K[0]*K[1]**3*K[2]**2*K[3]**2*K[4]**2*K[5]**2
+gamma   = (1/Keq)*(p[gas["NH3"]]**2/(p[gas["N2"]]*p[gas["H2"]]**3))
+rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma)
+lograte = np.log10(rate)
 
-print("rate = %e" % rate)
-data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done", "rate": rate}
+data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done", "rate": lograte}
 # add to json
 with open(reac_json, "r") as f:
 	datum = json.load(f)
