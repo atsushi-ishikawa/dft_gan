@@ -1,6 +1,6 @@
 #!/bin/sh
 surf_json="surf.json"
-numdata=100
+numdata=1
 todolist="todolist.txt"
 
 if [ ! -e $surf_json ]; then
@@ -22,14 +22,14 @@ for ((i=0; i<$nline; i++)); do
 	id=`head -1 $todolist`
 	tail -n +2 $todolist > tmp$$
 	mv tmp$$ $todolist
-	echo "$id"
-
-	# --- do calculation for id
-	python calc_reaction_energy.py --id $id
-	python rate.py --id $id
-
-	# --- when you submit
-	#qsub run_whisky.sh
+	#
+	# do reaction energy calculation for id
+	# do rate calculation for id
+	#         
+	#python calc_reaction_energy.py --id $id
+	#python rate.py --id $id
+	#
+	qsub run_whisky.sh $id
 
 	sleep 5
 done

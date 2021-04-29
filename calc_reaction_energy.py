@@ -35,10 +35,6 @@ reac_json  = args.reac_json
 # molecule collection from ase
 collection = g2
 
-# remove old one
-#if os.path.exists(reac_json):
-#	os.remove(reac_json)
-
 if not os.path.isfile(reac_json):
 	# reac_json does not exist -- make
 	with open(reac_json, "w") as f:
@@ -47,7 +43,7 @@ if not os.path.isfile(reac_json):
 print("hostname: ", socket.gethostname())
 
 db1 = connect(surf_json)
-steps = 50 # maximum number of geomtry optimization steps
+steps = 2 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -65,22 +61,23 @@ if "vasp" in calculator:
 	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 6
+	npar   = 4
 	nsim   = npar
 	kpar   = 1
 	isym   = 0
 	lreal  = True
 	lwave  = True
 	lcharg = True
+	lorbit = 10  # to avoid error
 
 	optimize_unitcell = False
 
-	calc_mol  = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
+	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
 					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma)
-	calc_surf = Vasp(label=None, prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
+					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
+	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
 					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma)
+					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
 else:
 	calc_mol  = EMT()
 	calc_surf = EMT()
@@ -92,19 +89,18 @@ num_surf = db1.count() + 1
 check = False
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
-	import numpy as np
 	cell = np.array([1, 1, 1]) * vacuum
 	Atoms.set_cell(cell)
-
-
-def set_calculator_with_label(Atoms, calc, label=None):
 	if "vasp" in calculator:
-		if label is None:
-			name = Atoms.get_chemical_formula()
-			calc.set_label(name)
-		else:
-			calc.set_label(label)
-	Atoms.set_calculator(calc)
+		Atoms.set_pbc(True)
+
+
+def set_calculator_with_directory(Atoms, calc, directory="."):
+	if "vasp" in calculator:
+		calc.directory = directory
+		Atoms.set_calculator(calc)
+	else:
+		pass
 
 
 def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
@@ -186,14 +182,7 @@ def savefig_atoms(atoms, filename):
 reactionfile = "nh3.txt"
 (r_ads, r_site, r_coef,  p_ads, p_site, p_coef) = get_reac_and_prod(reactionfile)
 rxn_num = get_number_of_reaction(reactionfile)
-#
-# loop over surfaces
-#
-#for id in range(1, num_surf):
-#surf = db1.get_atoms(id=id)
-#obj  = db1[id]
-#data = obj.data
-#unique_id = obj["unique_id"]
+
 surf = db1.get_atoms(unique_id=unique_id)
 
 try:
@@ -221,9 +210,10 @@ with open(reac_json, "w") as f:
 	json.dump(datum, f, indent=4)
 
 deltaE = np.array([])
+
+print(" --- calculating %s ---" % surf.get_chemical_formula())
 for irxn in range(rxn_num):
 	print("irxn = %d" % irxn)
-	print(" --- calculating %s ---" % surf.get_chemical_formula())
 
 	energies = {"reactant": 0.0, "product": 0.0}
 
@@ -252,8 +242,7 @@ for irxn in range(rxn_num):
 				atoms = Atoms(chem)
 				if check: view(atoms)
 				set_unitcell_gasphase(atoms)
-				label = atoms.get_chemical_formula() + "_" + unique_id
-				set_calculator_with_label(atoms, calc_mol, label=label)
+				calc = calc_mol
 
 			elif mol_type == "surf":
 				# surface calculation
@@ -261,9 +250,8 @@ for irxn in range(rxn_num):
 				if check: view(atoms)
 				nlayer = 4
 				nrelax = nlayer // 2
-				atoms = fix_lower_surface(atoms, nlayer, nrelax)
-				label = atoms.get_chemical_formula() + "_" + unique_id
-				set_calculator_with_label(atoms, calc_surf, label=label)
+				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
+				calc   = calc_surf
 
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
@@ -273,27 +261,38 @@ for irxn in range(rxn_num):
 				offset = (0.20, 0.20)  # for [3, 3] supercell
 
 				atoms  = surf.copy()
+				nlayer = 4
+				nrelax = nlayer // 2
+				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
-				label = atoms.get_chemical_formula() + "_" + unique_id + "_" + str(formula).zfill(2)
-				set_calculator_with_label(atoms, calc_surf, label=label)
-
+				calc   = calc_surf
 			else:
 				print("something wrong")
 				sys.exit(1)
 
+			dir = atoms.get_chemical_formula() + "_" + unique_id
+			set_calculator_with_directory(atoms, calc, directory=dir)
+
 			print("now calculating %s" % atoms.get_chemical_formula())
+			# geometry optimization
+			sys.stdout.flush()
 			run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+
+			# single point energy
+			sys.stdout.flush()
 			en = atoms.get_potential_energy()
+
 			E += coefs[imol]*en
 			if savefig:
 				savefig_atoms(atoms, "{0:s}_{1:03d}_{2:03d}_{3:03d}.png".format(side, id, irxn, imol))
 			if clean and "vasp" in calculator:
-				shutil.rmtree(label)
+				shutil.rmtree(dir)
 
 		energies[side] = E
 
-	print("e_reac = %8.5e, e_prod = %8.5e" % (energies["reactant"], energies["product"]))
-	deltaE = np.append(deltaE, energies["product"] - energies["reactant"])
+	dE = energies["product"] - energies["reactant"]
+	deltaE = np.append(deltaE, dE)
+	print("reaction energy = %8.4f" % dE)
 	#
 	# done
 	#
