@@ -17,7 +17,9 @@ import argparse
 import shutil
 import socket
 
-clean = True
+# whether to cleanup working directory for vasp
+clean   = False
+# save figures for structure
 savefig = False
 
 parser = argparse.ArgumentParser()
@@ -31,6 +33,12 @@ unique_id  = args.id
 calculator = args.calculator.lower()
 surf_json  = args.surf_json
 reac_json  = args.reac_json
+#
+# temprary database to avoid overlapping calculations
+#
+tmpdbfile = 'tmp.db'
+tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
+tmpdb = connect(tmpdbfile)
 
 # molecule collection from ase
 collection = g2
@@ -43,14 +51,14 @@ if not os.path.isfile(reac_json):
 print("hostname: ", socket.gethostname())
 
 db1 = connect(surf_json)
-steps = 2 # maximum number of geomtry optimization steps
+steps = 4 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
 	xc     = "pbe"
 	ivdw   = 0
 	nsw    = 0
-	nelm   = 30
+	nelm   = 40
 	ibrion = -1
 	algo   = "VeryFast"
 	ismear = 0
@@ -123,8 +131,6 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 	else:
 		print("use vasp or emt. now ", calc.name)
 		sys.exit(1)
-
-	print(" ------- geometry optimization finished ------- ")
 	#
 	# reset vasp calculator to single point energy's one
 	#
@@ -256,7 +262,6 @@ for irxn in range(rxn_num):
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
 				chem = collection[mol[0]]
-				formula = chem.get_chemical_formula()
 				chem.rotate(180, "y")
 				offset = (0.20, 0.20)  # for [3, 3] supercell
 
@@ -267,26 +272,59 @@ for irxn in range(rxn_num):
 				add_adsorbate(atoms, chem, offset=offset, height=height)
 				calc   = calc_surf
 			else:
-				print("something wrong")
+				print("something wrong in determining mol_type")
 				sys.exit(1)
 
-			dir = atoms.get_chemical_formula() + "_" + unique_id
+			#
+			# Identification done. Look for temporary database
+			# for identical system.
+			#
+			formula = atoms.get_chemical_formula()
+			try:
+				#past = tmpdb.get(name=formula + site + site_pos + config)
+				past = tmpdb.get(name = formula + site)
+			except:
+				first_time = True
+			else:
+				if site == past.data.site:
+					if len(mol) == 1:
+						atoms = tmpdb.get_atoms(id=past.id)
+						first_time = False
+
+			dir = formula + "_" + unique_id
 			set_calculator_with_directory(atoms, calc, directory=dir)
 
-			print("now calculating %s" % atoms.get_chemical_formula())
-			# geometry optimization
-			sys.stdout.flush()
-			run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+			first_or_not = "first_time" if first_time else "already_calculated"
+			print("now calculating {0:>10s} ... {1:s}".format(formula, first_or_not))
+			if first_time:
+				# geometry optimization
+				sys.stdout.flush()
+				run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
 
-			# single point energy
-			sys.stdout.flush()
-			en = atoms.get_potential_energy()
+				# single point energy
+				sys.stdout.flush()
+				en = atoms.get_potential_energy()
+
+				if savefig and mol_type == "adsorbed":
+					savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
+				if clean and "vasp" in calculator:
+					shutil.rmtree(dir)
+
+			else:
+				past = tmpdb.get(id=past.id)
+				en = past.data.energy
 
 			E += coefs[imol]*en
-			if savefig:
-				savefig_atoms(atoms, "{0:s}_{1:03d}_{2:03d}_{3:03d}.png".format(side, id, irxn, imol))
-			if clean and "vasp" in calculator:
-				shutil.rmtree(dir)
+
+			# recording to database
+			if(first_time):
+				#id = tmpdb.reserve(name = formula + site + site_pos + config)
+				id = tmpdb.reserve(name = formula + site)
+				if id is None: # somebody is writing to db
+					continue
+				else:
+					#tmpdb.write(tmp, name=formula + site + site_pos + config, id=id, data={'site':site, 'site_pos':site_pos, 'config':config})
+					tmpdb.write(atoms, name=formula + site, id=id, data={"energy": en, "site": site})
 
 		energies[side] = E
 
