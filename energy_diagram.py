@@ -5,6 +5,7 @@ import argparse
 import json
 from scipy import interpolate
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id")
@@ -13,7 +14,6 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 unique_id = args.id
 reac_json = args.reac_json
-
 
 # reation energies and equilibrium constant
 df_reac = pd.read_json(reac_json)
@@ -53,6 +53,10 @@ for i in x1_latent:
 		pass
 	y = np.append(y, max(val1, val2))
 
-plt.plot(x1_latent, y)
-plt.savefig("ped.png")
+sns.set(style="darkgrid", rc={"lines.linewidth": 2.0, "figure.figsize": (10, 4)})
+p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
+p.set_xlabel("Steps")
+p.set_ylabel("Energy (eV)")
 
+filename = id + "_" + "ped.png"
+plt.savefig(filename)
