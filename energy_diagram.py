@@ -55,3 +55,4 @@ for i in x1_latent:
 
 plt.plot(x1_latent, y)
 plt.savefig("ped.png")
+

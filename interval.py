@@ -22,6 +22,8 @@ surf_json = os.path.join(dirname + "/surf.json")
 reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
 
+interval  = 30*(60*1e3)  # in milisec
+
 app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/")
 
 app.layout = html.Div(
@@ -31,7 +33,7 @@ app.layout = html.Div(
 		], className="header"),
 		html.Div(children=[
 			html.Div(id="the number"),
-			dcc.Interval(id="interval-component", interval=60*1e3, n_intervals=0),
+			dcc.Interval(id="interval-component", interval=interval, n_intervals=0),
 		]),
 		dcc.Graph(id="graph_bar"),
 		html.Table([
