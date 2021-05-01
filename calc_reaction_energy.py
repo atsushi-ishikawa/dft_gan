@@ -18,9 +18,14 @@ import shutil
 import socket
 
 # whether to cleanup working directory for vasp
-clean   = False
+clean   = True
 # save figures for structure
 savefig = False
+# whether to do sigle point energy calculation after geometry optimization
+do_single_point = False
+# workdir to store vasp data
+#workdir = ""
+workdir = "/work/a_ishi/"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id")
@@ -51,11 +56,11 @@ if not os.path.isfile(reac_json):
 print("hostname: ", socket.gethostname())
 
 db1 = connect(surf_json)
-steps = 4 # maximum number of geomtry optimization steps
+steps = 20 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	xc     = "pbe"
+	xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0
 	nelm   = 40
@@ -74,9 +79,9 @@ if "vasp" in calculator:
 	kpar   = 1
 	isym   = 0
 	lreal  = True
-	lwave  = True
-	lcharg = True
 	lorbit = 10  # to avoid error
+	lwave  = True if do_single_point else False
+	lcharg = True if do_single_point else False
 
 	optimize_unitcell = False
 
@@ -117,6 +122,7 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		# EMT
 		opt = BFGS(atoms)
 		opt.run(fmax=fmax, steps=steps)
+		en = atoms.get_potential_energy()
 	elif calc.name.lower() == "vasp":
 		# VASP
 		calc.int_params["ibrion"]  = 2
@@ -127,14 +133,14 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 			calc.int_params["isif"] = 4
 			calc.exp_params["ediffg"] = ediff * 0.1  # energy based
 		atoms.set_calculator(calc)
-		atoms.get_potential_energy()
+		en = atoms.get_potential_energy()
 	else:
 		print("use vasp or emt. now ", calc.name)
 		sys.exit(1)
 	#
 	# reset vasp calculator to single point energy's one
 	#
-	if calc.name.lower() == "vasp":
+	if calc.name.lower() == "vasp" and do_single_point:
 		calc.int_params["ibrion"] = -1
 		calc.int_params["nsw"]  = 0
 		calc.int_params["isif"] = 2
@@ -142,6 +148,8 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		calc.int_params["icharg"] = 1
 		calc.input_params["potim"] = 0.1
 		atoms.set_calculator(calc)
+
+	return en
 
 
 def get_mol_type(mol, site):
@@ -248,6 +256,7 @@ for irxn in range(rxn_num):
 				atoms = Atoms(chem)
 				if check: view(atoms)
 				set_unitcell_gasphase(atoms)
+				atoms.center()
 				calc = calc_mol
 
 			elif mol_type == "surf":
@@ -263,7 +272,10 @@ for irxn in range(rxn_num):
 				# adsorbate calculation
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
-				offset = (0.20, 0.20)  # for [3, 3] supercell
+				if site == "atop":
+					offset = (0.33, 0.33)  # for [3, 3] supercell
+				else:
+					offset = (0.20, 0.20)  # for [3, 3] supercell
 
 				atoms  = surf.copy()
 				nlayer = 4
@@ -274,7 +286,6 @@ for irxn in range(rxn_num):
 			else:
 				print("something wrong in determining mol_type")
 				sys.exit(1)
-
 			#
 			# Identification done. Look for temporary database
 			# for identical system.
@@ -291,19 +302,22 @@ for irxn in range(rxn_num):
 						atoms = tmpdb.get_atoms(id=past.id)
 						first_time = False
 
-			dir = formula + "_" + unique_id
+			dir = workdir + formula + "_" + unique_id
 			set_calculator_with_directory(atoms, calc, directory=dir)
 
 			first_or_not = "first_time" if first_time else "already_calculated"
 			print("now calculating {0:>10s} ... {1:s}".format(formula, first_or_not))
 			if first_time:
-				# geometry optimization
-				sys.stdout.flush()
-				run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
-
-				# single point energy
-				sys.stdout.flush()
-				en = atoms.get_potential_energy()
+				if do_single_point:
+					# geometry optimization + single point energy calculation
+					sys.stdout.flush()
+					en = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+					sys.stdout.flush()
+					en = atoms.get_potential_energy()
+				else:
+					# geometry optimization only
+					sys.stdout.flush()
+					en = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
 
 				if savefig and mol_type == "adsorbed":
 					savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
