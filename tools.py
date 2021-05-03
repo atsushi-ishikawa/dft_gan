@@ -157,3 +157,15 @@ def fix_lower_surface(atoms, nlayer, nrelax):
     newatoms.set_constraint(c)
     return newatoms
 
+
+def find_highest(json, score):
+	import pandas as pd
+
+	df = pd.read_json(json)
+	df = df.set_index("unique_id")
+	df = df.dropna(subset=[score])
+	df = df.sort_values(score, ascending=False)
+	
+	best = df.iloc[0].name
+
+	return best

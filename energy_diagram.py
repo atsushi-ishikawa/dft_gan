@@ -6,14 +6,21 @@ import json
 from scipy import interpolate
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tools import find_highest
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--id")
+parser.add_argument("--id", default="")
 parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading rxn. energy and writing rate")
+parser.add_argument("--best", default=True)
 
 args = parser.parse_args()
-unique_id = args.id
 reac_json = args.reac_json
+best = args.best
+
+if best:
+	unique_id = find_highest(json=reac_json, score="rate")
+else:
+	unique_id = args.id
 
 # reation energies and equilibrium constant
 df_reac = pd.read_json(reac_json)
@@ -58,5 +65,6 @@ p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
 p.set_xlabel("Steps")
 p.set_ylabel("Energy (eV)")
 
-filename = id + "_" + "ped.png"
+filename = unique_id + "_" + "ped.png"
 plt.savefig(filename)
+
