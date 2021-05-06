@@ -11,6 +11,7 @@ import random
 elem = {"symbol": "Pt", "a": 3.90}
 
 surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
+surf.pbc = True
 check = False # check structure or not
 calc  = EMT()
 #
@@ -19,8 +20,8 @@ calc  = EMT()
 natoms = len(surf.get_atomic_numbers())
 max_replace = int(0.3 * natoms)  # 5
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
-#elem2 = ["Rh"]
-elem2 = ["Pd"]
+elem2 = ["Rh"]
+#elem2 = ["Pd"]
 
 outjson = "surf.json"
 
