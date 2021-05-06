@@ -382,6 +382,7 @@ for sample in samples:
 	surf.set_atomic_numbers(sample)
 	atomic_numbers = surf.get_atomic_numbers()
 	formula = surf.get_chemical_formula()
+	surf.pbc = True
 
 	print("formula: ", surf.get_chemical_formula())
 	if check: view(surf)

@@ -3,7 +3,7 @@
 calculators=whisky
 dir=/home/a_ishi/ase/nn_reac/
 
-echo "$calculators:$dir"
+echo "downloading json files from $calculators:$dir"
 
 # copy json file from VASP calculating clusters
 scp $calculators:$dir/{surf,reaction_energy}.json ./
