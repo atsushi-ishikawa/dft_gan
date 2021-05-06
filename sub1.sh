@@ -1,24 +1,25 @@
 #!/bin/sh
 surf_json="surf.json"
-numdata=1
+max_sub=10
 todolist="todolist.txt"
 
 if [ ! -e $surf_json ]; then
-	# surf_json does not exist ... new calculation
-
-	# cleanup
-	rm $todolist reaction_energy.json loss.h5 2> /dev/null
-	rm -rf ./log 2> /dev/null
-
-	python make_surf.py $numdata
-	python make_todo_list.py
+	./sub0.sh
 fi
 
 # read todolist
 nline=`cat $todolist | wc -l`
 
-# extract id from todlist and delete it
-for ((i=0; i<$nline; i++)); do
+if [ $nline -le $max_sub ]; then
+	max=$nline
+else
+	max=$max_sub
+fi
+
+for ((i=0; i<$max; i++)); do
+	#
+	# extract id from todlist and delete it
+	#
 	id=`head -1 $todolist`
 	tail -n +2 $todolist > tmp$$
 	mv tmp$$ $todolist
@@ -28,7 +29,7 @@ for ((i=0; i<$nline; i++)); do
 	#         
 	#python calc_reaction_energy.py --id $id
 	#python rate.py --id $id
-	#
+	# or
 	qsub run_whisky.sh $id
 
 	sleep 5
