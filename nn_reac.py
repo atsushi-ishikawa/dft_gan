@@ -62,9 +62,9 @@ print("numdata: %d" % numdata)
 #
 numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-num_epoch  = 500  # 500 seems better than 200
+num_epoch  = 500 # 500 seems better than 200
 printnum   = 50
-batch_size = 50  # 50 is better than 30
+batch_size = 20  # 50  # 50 is better than 30
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
@@ -331,16 +331,16 @@ def make_atomic_numbers(inputlist, reflist):
 	"""
 	global scaler_selection
 
-	atom_num = {"Pd": 46, "Pt": 78}  # atomic numbers
+	atom_num = {"Rh": 45, "Pd": 46, "Pt": 78}  # atomic numbers
 	# 3D --> 2D
 	if len(inputlist.shape) == 3:
 		inputlist = inputlist.reshape(batch_size, -1)
 
 	tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
 	if scaler_selection == "minmax":
-		tmplist = [list(map(lambda x: atom_num["Pt"] if x > 0.5 else atom_num["Pd"], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: atom_num["Pt"] if x > 0.5 else atom_num["Rh"], i)) for i in tmplist]
 	else:
-		tmplist = [list(map(lambda x: atom_num["Pt"] if x > np.mean(i) else atom_num["Pd"], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: atom_num["Pt"] if x > np.mean(i) else atom_num["Rh"], i)) for i in tmplist]
 
 	reflist = reflist.values.tolist()
 	#
@@ -373,7 +373,8 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-surf = fcc111(symbol="Pd", size=[3, 3, 4], a=4.0, vacuum=10.0)
+base_element = "Pt"
+surf = fcc111(symbol=base_element, size=[3, 3, 4], a=4.0, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
