@@ -23,12 +23,13 @@ clean   = True
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
+
 # workdir to store vasp data
 #workdir = ""
 workdir = "/work/a_ishi/"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--id")
+parser.add_argument("--id", help="id for surface system")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
 parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
 parser.add_argument("--reac_json",  default="reaction_energy.json", help="json for writing reaction energies")
@@ -66,7 +67,7 @@ if "vasp" in calculator:
 	nelm   = 40
 	ibrion = -1
 	algo   = "VeryFast"
-	ismear = 0
+	ismear = 1
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
@@ -74,7 +75,7 @@ if "vasp" in calculator:
 	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 4
+	npar   = 6
 	nsim   = npar
 	kpar   = 1
 	isym   = 0
@@ -87,7 +88,7 @@ if "vasp" in calculator:
 
 	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
 					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
+					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
 	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
 					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
 					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
@@ -97,9 +98,7 @@ else:
 	optimize_unitcell = False
 
 height = 1.8
-num_surf = db1.count() + 1
-
-check = False
+check  = False
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1]) * vacuum
@@ -142,8 +141,8 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 	#
 	if calc.name.lower() == "vasp" and do_single_point:
 		calc.int_params["ibrion"] = -1
-		calc.int_params["nsw"]  = 0
-		calc.int_params["isif"] = 2
+		calc.int_params["nsw"]    = 0
+		calc.int_params["isif"]   = 2
 		calc.int_params["istart"] = 1
 		calc.int_params["icharg"] = 1
 		calc.input_params["potim"] = 0.1
@@ -274,8 +273,10 @@ for irxn in range(rxn_num):
 				chem.rotate(180, "y")
 				if site == "atop":
 					offset = (0.33, 0.33)  # for [3, 3] supercell
-				else:
+				elif site == "fcc":
 					offset = (0.20, 0.20)  # for [3, 3] supercell
+				else:
+					offset = (0.50, 0.50)
 
 				atoms  = surf.copy()
 				nlayer = 4
@@ -293,7 +294,7 @@ for irxn in range(rxn_num):
 			formula = atoms.get_chemical_formula()
 			try:
 				#past = tmpdb.get(name=formula + site + site_pos + config)
-				past = tmpdb.get(name = formula + site)
+				past = tmpdb.get(name = formula + site + unique_id)
 			except:
 				first_time = True
 			else:
@@ -333,12 +334,12 @@ for irxn in range(rxn_num):
 			# recording to database
 			if(first_time):
 				#id = tmpdb.reserve(name = formula + site + site_pos + config)
-				id = tmpdb.reserve(name = formula + site)
+				id = tmpdb.reserve(name = formula + site + unique_id)
 				if id is None: # somebody is writing to db
 					continue
 				else:
 					#tmpdb.write(tmp, name=formula + site + site_pos + config, id=id, data={'site':site, 'site_pos':site_pos, 'config':config})
-					tmpdb.write(atoms, name=formula + site, id=id, data={"energy": en, "site": site})
+					tmpdb.write(atoms, name=formula + site + unique_id, id=id, data={"energy": en, "site": site})
 
 		energies[side] = E
 
