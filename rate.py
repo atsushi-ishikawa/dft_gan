@@ -12,8 +12,10 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 reac_json = args.reac_json
 
-T = 500
-ptot = 1.0e5
+T = 700
+ptot = 100.0e5
+kJtoeV = 1/98.415
+kB = 8.617*1.0e-5
 
 gas = {"N2": 0, "H2":1, "NH3": 2}
 ads = {"N" : 0, "H":1, "NH": 2, "NH2": 3, "NH3": 4, "vac": 5}
@@ -32,6 +34,12 @@ p[gas["NH3"]] = p[gas["N2"]]*conversion
 # coverage
 theta  = np.zeros(len(ads))
 
+# entropy
+deltaS    = np.zeros(rxn_num)
+deltaS[0] = -1.0e-3
+deltaS[1] = -1.0e-3
+deltaS[5] =  1.0e-3
+
 # reation energies and equilibrium constant
 df_reac = pd.read_json(reac_json)
 df_reac = df_reac.set_index("unique_id")
@@ -45,7 +53,7 @@ for id in range(num_data):
 		unique_id = df_reac.iloc[id].name
 		deltaE = df_reac.iloc[id].reaction_energy
 		deltaE = np.array(deltaE)
-		deltaG = deltaE
+		deltaG = deltaE - T*deltaS
 		K = np.exp(deltaG)
 
 		# rate-determining step
@@ -53,18 +61,17 @@ for id in range(num_data):
 
 		# activation energy
 		# Bronsted-Evans-Polanyi
-		alpha = 1.4
-		beta  = 1.0
+		alpha = 1.2
+		beta  = 0.5
 		tmp = alpha*deltaE + beta
 		Ea  = tmp[rds]
 
-		kJtoeV = 1/98.415
 		RT = 8.314*T*1.0e-3*kJtoeV  # J/K * K
 		k  = np.exp(-Ea/RT)
 
 		# coverage
 		tmp = 1 + np.sqrt(K[1]*p[gas["H2"]]) \
-				+ p[gas["NH3"]]/(np.sqrt(K[1]*p[gas["H2"]])*K[4]+K[5]) \
+				+ p[gas["NH3"]]/(np.sqrt(K[1]*p[gas["H2"]])*K[4]*K[5]) \
 				+ p[gas["NH3"]]/(K[1]*p[gas["H2"]]*K[3]*K[4]*K[5]) \
 				+ p[gas["NH3"]]/(K[1]**(3/2)*p[gas["H2"]]**(3/2)*K[2]*K[3]*K[4]*K[5]) \
 				+ p[gas["NH3"]]/K[5]
@@ -95,6 +102,7 @@ for id in range(num_data):
 			with open(reac_json, "w") as f:
 				json.dump(datum, f, indent=4)
 
+		print("theta[N] = {0:5.3e}, theta[vac] = {1:5.3e}".format(theta[ads["N"]], theta[ads["vac"]]))
 		print("Ea = {0:5.3f} eV, log(rate) = {1:5.3f}".format(Ea, lograte))
 	else:
 		print("reaction energy not available")

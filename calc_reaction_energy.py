@@ -57,7 +57,7 @@ if not os.path.isfile(reac_json):
 print("hostname: ", socket.gethostname())
 
 db1 = connect(surf_json)
-steps = 20 # maximum number of geomtry optimization steps
+steps = 5 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
