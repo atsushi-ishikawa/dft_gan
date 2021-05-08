@@ -67,7 +67,8 @@ for id in range(num_data):
 		Ea  = tmp[rds]
 
 		RT = 8.314*T*1.0e-3*kJtoeV  # J/K * K
-		k  = np.exp(-Ea/RT)
+		A  = 1.0e6
+		k  = A*np.exp(-Ea/RT)
 
 		# coverage
 		tmp = 1 + np.sqrt(K[1]*p[gas["H2"]]) \
