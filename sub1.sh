@@ -1,10 +1,11 @@
 #!/bin/sh
 surf_json="surf.json"
-max_sub=10
+num_data=100
+max_sub=20
 todolist="todolist.txt"
 
 if [ ! -e $surf_json ]; then
-	./sub0.sh
+	./sub0.sh $num_data
 fi
 
 # read todolist
@@ -30,7 +31,7 @@ for ((i=0; i<$max; i++)); do
 	#python calc_reaction_energy.py --id $id
 	#python rate.py --id $id
 	# or
-	qsub run_whisky.sh $id
+	qsub run_reaction_energy.sh $id
 
 	sleep 5
 done
