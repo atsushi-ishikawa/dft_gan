@@ -18,7 +18,7 @@ import shutil
 import socket
 
 # whether to cleanup working directory for vasp
-clean   = True
+clean   = False
 # save figures for structure
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
@@ -61,13 +61,14 @@ steps = 5 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	xc     = "rpbe"
+	#xc     = "beef-vdw"
+	xc     = "pbe"
 	ivdw   = 0
 	nsw    = 0
-	nelm   = 40
+	nelm   = 30
 	ibrion = -1
-	algo   = "VeryFast"
-	ismear = 1
+	algo   = "Fast"
+	ismear = 0
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
@@ -75,32 +76,33 @@ if "vasp" in calculator:
 	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 6
+	npar   = 4
 	nsim   = npar
-	kpar   = 1
 	isym   = 0
 	lreal  = True
 	lorbit = 10  # to avoid error
 	lwave  = True if do_single_point else False
 	lcharg = True if do_single_point else False
+	ldipol = False
+	idipol = 3
 
 	optimize_unitcell = False
 
 	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
+					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit, ldipol=False)
 	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
-					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, kpar=kpar, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
+					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, idipol=idipol, ldipol=ldipol)
 else:
 	calc_mol  = EMT()
 	calc_surf = EMT()
 	optimize_unitcell = False
 
-height = 1.8
+height = 1.6
 check  = False
 
-def set_unitcell_gasphase(Atoms, vacuum=10.0):
+def set_unitcell_gasphase(Atoms, vacuum=12.0):
 	cell = np.array([1, 1, 1]) * vacuum
 	Atoms.set_cell(cell)
 	if "vasp" in calculator:
@@ -265,6 +267,7 @@ for irxn in range(rxn_num):
 				nlayer = 4
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
+				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 
 			elif mol_type == "adsorbed":
@@ -283,6 +286,7 @@ for irxn in range(rxn_num):
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
+				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 			else:
 				print("something wrong in determining mol_type")
@@ -346,6 +350,10 @@ for irxn in range(rxn_num):
 	dE = energies["product"] - energies["reactant"]
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
+
+	if abs(dE) > 100.0:
+		print("errorous reaction energy ... quit")
+		sys.exit(1)
 	#
 	# done
 	#
