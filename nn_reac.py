@@ -52,11 +52,11 @@ df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 df  = df.sort_values(score, ascending=False)
 #
-# droping NaN in atomic numbers
+# droping NaN in atomic numbers and score
 #
 df = df.dropna(subset=["atomic_numbers"])
+df = df.dropna(subset=[score])
 numdata = len(df)
-print("numdata: %d" % numdata)
 #
 # parameters
 #
