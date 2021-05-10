@@ -89,7 +89,7 @@ for id in range(num_data):
 		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma)
 		lograte = np.log10(rate)
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done", "rate": lograte}
+		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "rate": lograte}
 
 		# add to json
 		with open(reac_json, "r") as f:
