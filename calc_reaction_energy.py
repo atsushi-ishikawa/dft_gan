@@ -67,12 +67,13 @@ if "vasp" in calculator:
 	nsw    = 0
 	nelm   = 30
 	ibrion = -1
-	algo   = "Fast"
-	ismear = 0
+	potim  = 0.2
+	algo   = "VeryFast"
+	ismear = 1
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
-	kpts   = [1, 1, 1]
+	kpts   = [2, 2, 1]
 	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
@@ -88,10 +89,10 @@ if "vasp" in calculator:
 
 	optimize_unitcell = False
 
-	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
+	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
 					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
 					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit, ldipol=False)
-	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, nsw=nsw, nelm=nelm,
+	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
 					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
 					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, idipol=idipol, ldipol=ldipol)
 else:
@@ -99,7 +100,7 @@ else:
 	calc_surf = EMT()
 	optimize_unitcell = False
 
-height = 1.6
+height = 1.8
 check  = False
 
 def set_unitcell_gasphase(Atoms, vacuum=12.0):
@@ -128,7 +129,7 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		# VASP
 		calc.int_params["ibrion"]  = 2
 		calc.int_params["nsw"]     = steps
-		calc.input_params["potim"] = 0.1
+		calc.input_params["potim"] = potim
 		calc.exp_params["ediffg"]  = -fmax  # force based
 		if optimize_unitcell:
 			calc.int_params["isif"] = 4
@@ -142,12 +143,12 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 	# reset vasp calculator to single point energy's one
 	#
 	if calc.name.lower() == "vasp" and do_single_point:
-		calc.int_params["ibrion"] = -1
-		calc.int_params["nsw"]    = 0
-		calc.int_params["isif"]   = 2
-		calc.int_params["istart"] = 1
-		calc.int_params["icharg"] = 1
-		calc.input_params["potim"] = 0.1
+		calc.int_params["ibrion"]  = -1
+		calc.int_params["nsw"]     = 0
+		calc.int_params["isif"]    = 2
+		calc.int_params["istart"]  = 1
+		calc.int_params["icharg"]  = 1
+		calc.input_params["potim"] = 0
 		atoms.set_calculator(calc)
 
 	return en
@@ -217,12 +218,12 @@ if unique_id in df_reac.index:
 		sys.exit(0)
  
 # no one is doing this system ... calculate here
-with open(reac_json, "r") as f:
-	datum = json.load(f)
-	data  = {"unique_id": unique_id, "status": "doing"}
-	datum.append(data)
-with open(reac_json, "w") as f:
-	json.dump(datum, f, indent=4)
+#with open(reac_json, "r") as f:
+#	datum = json.load(f)
+#	data  = {"unique_id": unique_id, "status": "doing"}
+#	datum.append(data)
+#with open(reac_json, "w") as f:
+#	json.dump(datum, f, indent=4)
 
 deltaE = np.array([])
 
@@ -267,7 +268,7 @@ for irxn in range(rxn_num):
 				nlayer = 4
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
-				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 
 			elif mol_type == "adsorbed":
@@ -275,9 +276,11 @@ for irxn in range(rxn_num):
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
 				if site == "atop":
-					offset = (0.33, 0.33)  # for [3, 3] supercell
+					#offset = (0.33, 0.33)  # for [3, 3] supercell
+					offset = (0.50, 0.50)  # for [2, 2] supercell
 				elif site == "fcc":
-					offset = (0.20, 0.20)  # for [3, 3] supercell
+					#offset = (0.20, 0.20)  # for [3, 3] supercell
+					offset = (0.33, 0.33)  # for [2, 2] supercell
 				else:
 					offset = (0.50, 0.50)
 
@@ -286,7 +289,7 @@ for irxn in range(rxn_num):
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
-				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 			else:
 				print("something wrong in determining mol_type")
