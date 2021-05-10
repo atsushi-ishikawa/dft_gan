@@ -100,8 +100,8 @@ for id in range(num_data):
 					break
 
 			datum.append(data)
-	#		with open(reac_json, "w") as f:
-	#			json.dump(datum, f, indent=4)
+			with open(reac_json, "w") as f:
+				json.dump(datum, f, indent=4)
 
 		print("theta[N] = {0:5.3e}, theta[vac] = {1:5.3e}".format(theta[ads["N"]], theta[ads["vac"]]))
 		print("Ea = {0:5.3f} eV, log(rate) = {1:5.3f}".format(Ea, lograte))
