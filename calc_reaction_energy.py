@@ -310,7 +310,7 @@ for irxn in range(rxn_num):
 			dir = workdir + formula + "_" + unique_id
 			set_calculator_with_directory(atoms, calc, directory=dir)
 
-			first_or_not = "first_time" if first_time else "already_calculated"
+			first_or_not = "first time" if first_time else "already calculated"
 			print("now calculating {0:>10s} ... {1:s}".format(formula, first_or_not))
 			if first_time:
 				if do_single_point:
