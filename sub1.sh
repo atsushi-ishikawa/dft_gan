@@ -1,8 +1,9 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=100
+num_data=40
 max_sub=20
 todolist="todolist.txt"
+tmpdb="tmp.db"
 
 if [ ! -e $surf_json ]; then
 	./sub0.sh $num_data
@@ -16,6 +17,15 @@ if [ $nline -le $max_sub ]; then
 else
 	max=$max_sub
 fi
+
+#
+# now start calculation
+#
+
+# remove trash from previous run
+rm stdout* stderr*
+clean
+rm $tmpdb
 
 for ((i=0; i<$max; i++)); do
 	#
