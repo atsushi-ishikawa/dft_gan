@@ -55,6 +55,7 @@ if not os.path.isfile(reac_json):
 		f.write(json.dumps([], indent=4))
 
 print("hostname: ", socket.gethostname())
+print("id: ", unique_id)
 
 db1 = connect(surf_json)
 steps = 5 # maximum number of geomtry optimization steps
@@ -310,7 +311,7 @@ for irxn in range(rxn_num):
 						atoms = tmpdb.get_atoms(id=past.id)
 						first_time = False
 
-			dir = workdir + formula + "_" + unique_id
+			dir = workdir + unique_id + "_" + formula + "_"
 			set_calculator_with_directory(atoms, calc, directory=dir)
 
 			first_or_not = "first time" if first_time else "already calculated"
@@ -354,7 +355,7 @@ for irxn in range(rxn_num):
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
 
-	if abs(dE) > 100.0:
+	if abs(dE) > 5.0:
 		print("errorous reaction energy ... quit")
 		sys.exit(1)
 	#
@@ -362,6 +363,7 @@ for irxn in range(rxn_num):
 	#
 if check: view(surf)
 
-data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done"}
+#data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done"}
+data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
 
