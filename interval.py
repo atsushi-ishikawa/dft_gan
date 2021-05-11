@@ -26,7 +26,16 @@ eneg_file = os.path.join(dirname + "/diag.h5")
 interval = 60*(60*1e3)  # in milisec
 height = 320  # height of each figure
 
-app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/")
+external_stylesheets = [
+	'https://codepen.io/chriddyp/pen/bWLwgP.css',
+	{
+		'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+		'rel': 'stylesheet',
+		'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+		'crossorigin': 'anonymous'
+	}
+]
+app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/", external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(
 	children=[
@@ -38,13 +47,21 @@ app.layout = html.Div(
 			dcc.Interval(id="interval-component", interval=interval, n_intervals=0),
 		]),
 		dcc.Graph(id="graph_bar"),
-		html.Table([
-			html.Tr([
-				html.Td([dcc.Graph(id="graph_loss")]),
-				html.Td([dcc.Graph(id="energy")]),
-				#html.Td([html.Div(id="structure")]),
-			]),
-		]),
+		html.Div([
+			html.Div([
+				dcc.Graph(id="graph_loss"),
+			], className="six columns"),
+			html.Div([
+				dcc.Graph(id="energy"),
+			], className="six columns")
+		], className="row"),
+#		html.Table([
+#			html.Tr([
+#				html.Td([dcc.Graph(id="graph_loss")]),
+#				#html.Td([dcc.Graph(id="energy")]),
+#				#html.Td([html.Div(id="structure")]),
+#			]),
+#		]),
 	],
 )
 
@@ -55,7 +72,7 @@ app.layout = html.Div(
 	[Input("interval-component", "n_intervals"),
 	 Input("interval-component", "interval")])
 def display_num(n_intervals, intervals):
-	style = {"padding": "5px", "fontsize": "16px"}
+	style = {"padding": "5px", "fontsize": "40px"}
 	return html.Div('updated {0:d} times (updating every {1:.0f} min)'.format(n_intervals, intervals/60/1e3), style=style)
 
 #
@@ -87,10 +104,9 @@ def make_energy_diagram(n):
 
 	figure = go.Figure()
 	figure.add_trace(go.Scatter(x=x, y=y, mode="lines"))
-	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
+	figure.update_layout(margin=dict(r=40, t=20, b=20),
 						 xaxis_title="steps", yaxis_title="Potential energy (eV)",
 						 height=height)
-
 	return figure
 #
 # plotting currently best structure
@@ -145,7 +161,7 @@ def make_score_bar(n):
 							   name="run " + str(i)))
 
 	#figure.update_yaxes(range=[minval-0.01, maxval+0.01])
-	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
+	figure.update_layout(margin=dict(r=20, t=20, b=20),
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 yaxis_title=score,
 						 height=height)
@@ -165,8 +181,8 @@ def make_loss_figure(n):
 	figure = go.Figure()
 	figure.add_trace(go.Scatter(x=epoch, y=D_loss, mode="lines", name="Discriminator loss"))
 	figure.add_trace(go.Scatter(x=epoch, y=G_loss, mode="lines", name="Generator loss"))
-	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
-						 xaxis_title="epoch",
+	figure.update_layout(margin=dict(r=20, t=20, b=20),
+						 xaxis_title="epoch", yaxis_title="loss",
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 height=height)
 	return figure
@@ -174,3 +190,4 @@ def make_loss_figure(n):
 
 if __name__ == "__main__":
 	app.run_server()
+
