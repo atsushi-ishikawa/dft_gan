@@ -23,7 +23,8 @@ reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
 eneg_file = os.path.join(dirname + "/diag.h5")
 
-interval = 30*(60*1e3)  # in milisec
+interval = 60*(60*1e3)  # in milisec
+height = 320  # height of each figure
 
 app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/")
 
@@ -55,7 +56,7 @@ app.layout = html.Div(
 	 Input("interval-component", "interval")])
 def display_num(n_intervals, intervals):
 	style = {"padding": "5px", "fontsize": "16px"}
-	return html.Div('updated {} times (updating every {} min)'.format(n_intervals, intervals/60/1e3), style=style)
+	return html.Div('updated {0:d} times (updating every {1:.0f} min)'.format(n_intervals, intervals/60/1e3), style=style)
 
 #
 # getting current process
@@ -67,8 +68,6 @@ def getting_status(n):
 		status = "Now doing GAN"
 	elif os.path.exists(dirname + "/doing_reaction_energy_calc"):
 		status = "Now doing reaction energy calculation"
-	elif os.path.exists(dirname + "/doing_preparation"):
-		status = "Now preparing data"
 	elif os.path.exists(dirname + "/doing_finished"):
 		status = "Finished"
 	else:
@@ -87,10 +86,10 @@ def make_energy_diagram(n):
 	y = h5file["y"][:]
 
 	figure = go.Figure()
-	figure.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Gibbs energy"))
+	figure.add_trace(go.Scatter(x=x, y=y, mode="lines"))
 	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
-						 xaxis_title="steps", yaxis_title="Gibbs energy (eV)",
-						 height=260)
+						 xaxis_title="steps", yaxis_title="Potential energy (eV)",
+						 height=height)
 
 	return figure
 #
@@ -149,7 +148,7 @@ def make_score_bar(n):
 	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 yaxis_title=score,
-						 height=260)
+						 height=height)
 	return figure
 
 #
@@ -169,7 +168,7 @@ def make_loss_figure(n):
 	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
 						 xaxis_title="epoch",
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
-						 height=260)
+						 height=height)
 	return figure
 
 

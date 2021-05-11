@@ -1,20 +1,26 @@
 #!/bin/sh
 
-calculators=whisky
-dir=/home/a_ishi/ase/nn_reac/
+cpu_team="whisky"
+dir=${HOME}/ase/nn_reac/
 
 echo "downloading json files from $calculators:$dir"
 
 # copy json file from VASP calculating clusters
-scp $calculators:$dir/{surf,reaction_energy}.json ./
+scp $cpu_team:$dir/{surf,reaction_energy}.json ./
 cp surf.json surf.json.bk
 cp reaction_energy.json reaction_energy.json.bk
 
 python rate.py
 python energy_diagram.py
 
+rm doing_reaction_energy_calc 2> /dev/null
+touch doing_GAN
+
 python nn_reac.py
 python make_todo_list.py
 
-scp ./{surf.json,todolist.txt} $calculators:$dir
+scp ./{surf.json,todolist.txt} $cpu_team:$dir
+
+rm doing_GAN 2> /dev/null
+touch doing_reaction_energy_calc
 

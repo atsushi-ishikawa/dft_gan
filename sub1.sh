@@ -4,6 +4,8 @@ num_data=40
 max_sub=20
 todolist="todolist.txt"
 tmpdb="tmp.db"
+dash_server="mio"
+dir=${HOME}/ase/nn_reac
 
 if [ ! -e $surf_json ]; then
 	./sub0.sh $num_data
@@ -45,4 +47,7 @@ for ((i=0; i<$max; i++)); do
 
 	sleep 5
 done
+
+touch doing_reaction_energy_calc
+scp doing_reaction_energy_calc $dash_server:$dir
 
