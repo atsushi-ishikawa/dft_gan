@@ -7,6 +7,7 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tools import find_highest
+import h5py
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", default="")
@@ -16,6 +17,7 @@ parser.add_argument("--best", default=True)
 args = parser.parse_args()
 reac_json = args.reac_json
 best = args.best
+eneg_file = "diag.h5"
 
 if best:
 	unique_id = find_highest(json=reac_json, score="rate")
@@ -61,15 +63,27 @@ for i in x1_latent:
 		pass
 	y = np.append(y, max(val1, val2))
 
-sns.set(style="darkgrid", rc={"lines.linewidth": 2.0, "figure.figsize": (10, 4)})
-p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
-p.set_xlabel("Steps")
-p.set_ylabel("Energy (eV)")
+# save h5 file
+h5file = h5py.File(eneg_file,"w")
+h5file.create_dataset("x", (1,), maxshape=(None, ), chunks=True, dtype="float")
+h5file.create_dataset("y", (1,), maxshape=(None, ), chunks=True, dtype="float")
+h5file.close()
 
-filename = unique_id + "_" + "ene_diag.png"
-plt.savefig(filename)
+with h5py.File(eneg_file, "a") as f:
+	size_resize = len(x1_latent)
+	f["x"].resize(size_resize, axis=0)
+	f["y"].resize(size_resize, axis=0)
 
-# save to logdir
-logdir = "./log/"
-os.system("cp {0:s} {1:s}".format(filename, logdir+"best_ene_diag.png"))
+	f["x"][:] = x1_latent
+	f["y"][:] = y
+
+# when saving png file
+savefig = False
+if savefig:
+	sns.set(style="darkgrid", rc={"lines.linewidth": 2.0, "figure.figsize": (10, 4)})
+	p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
+	p.set_xlabel("Steps")
+	p.set_ylabel("Energy (eV)")
+	filename = unique_id + "_" + "ene_diag.png"
+	plt.savefig(filename)
 

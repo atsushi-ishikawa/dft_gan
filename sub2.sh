@@ -11,6 +11,7 @@ cp surf.json surf.json.bk
 cp reaction_energy.json reaction_energy.json.bk
 
 python rate.py
+python energy_diagram.py
 
 python nn_reac.py
 python make_todo_list.py

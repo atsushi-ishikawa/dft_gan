@@ -21,6 +21,7 @@ dirname   = os.path.dirname(cwd)
 surf_json = os.path.join(dirname + "/surf.json")
 reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
+eneg_file = os.path.join(dirname + "/diag.h5")
 
 interval = 30*(60*1e3)  # in milisec
 
@@ -39,8 +40,8 @@ app.layout = html.Div(
 		html.Table([
 			html.Tr([
 				html.Td([dcc.Graph(id="graph_loss")]),
+				html.Td([dcc.Graph(id="energy")]),
 				#html.Td([html.Div(id="structure")]),
-				html.Td([html.Div(id="energy")]),
 			]),
 		]),
 	],
@@ -78,16 +79,20 @@ def getting_status(n):
 #
 # plotting currently best energy diagram
 #
-@app.callback(Output("energy", "children"),
-	[Input("interval-component", "n_intervals")])
-def plot_energy_diagram(n):
-	figfile = os.path.join(dirname + "/log/best_ene_diag.png")
-	if os.path.exists(figfile):
-		os.system("cp %s %s" % (figfile, dirname + "/assets"))
-		return html.Img(src=app.get_asset_url(os.path.basename(figfile)), width="100%")
-	else:
-		return html.H2("not yet")
+@app.callback(Output("energy", "figure"),
+			 [Input("interval-component", "n_intervals")])
+def make_energy_diagram(n):
+	h5file = h5py.File(eneg_file, "r")
+	x = h5file["x"][:]
+	y = h5file["y"][:]
 
+	figure = go.Figure()
+	figure.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Gibbs energy"))
+	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
+						 xaxis_title="steps", yaxis_title="Gibbs energy (eV)",
+						 height=260)
+
+	return figure
 #
 # plotting currently best structure
 #
@@ -136,14 +141,15 @@ def make_score_bar(n):
 		opacity = 0.2 if i==0 else 1.0
 
 		figure.add_trace(go.Bar(x=x, y=y, marker_color=color, opacity=opacity, 
-							   customdata=df_now[["chemical_formula","unique_id"]], hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
+							   customdata=df_now[["chemical_formula","unique_id"]], 
+							   hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
 							   name="run " + str(i)))
 
-	figure.update_yaxes(range=[minval-0.01, maxval+0.01])
+	#figure.update_yaxes(range=[minval-0.01, maxval+0.01])
 	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
-						 height=260,
-						)
+						 yaxis_title=score,
+						 height=260)
 	return figure
 
 #
@@ -161,9 +167,9 @@ def make_loss_figure(n):
 	figure.add_trace(go.Scatter(x=epoch, y=D_loss, mode="lines", name="Discriminator loss"))
 	figure.add_trace(go.Scatter(x=epoch, y=G_loss, mode="lines", name="Generator loss"))
 	figure.update_layout(margin=dict(l=10, r=20, t=20, b=20),
+						 xaxis_title="epoch",
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
-						 height=260,
-						)
+						 height=260)
 	return figure
 
 
