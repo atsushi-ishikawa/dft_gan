@@ -22,7 +22,7 @@ surf_json = os.path.join(dirname + "/surf.json")
 reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
 
-interval  = 30*(60*1e3)  # in milisec
+interval = 30*(60*1e3)  # in milisec
 
 app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/")
 
@@ -39,10 +39,10 @@ app.layout = html.Div(
 		html.Table([
 			html.Tr([
 				html.Td([dcc.Graph(id="graph_loss")]),
-				html.Td([html.Div(id="structure")]),
+				#html.Td([html.Div(id="structure")]),
+				html.Td([html.Div(id="energy")]),
 			]),
 		]),
-		#dcc.Graph(id="graph_loss")
 	],
 )
 
@@ -74,6 +74,19 @@ def getting_status(n):
 		status = "doing something else"
 
 	return html.H2("%s" % status)
+
+#
+# plotting currently best energy diagram
+#
+@app.callback(Output("energy", "children"),
+	[Input("interval-component", "n_intervals")])
+def plot_energy_diagram(n):
+	figfile = os.path.join(dirname + "/log/best_ene_diag.png")
+	if os.path.exists(figfile):
+		os.system("cp %s %s" % (figfile, dirname + "/assets"))
+		return html.Img(src=app.get_asset_url(os.path.basename(figfile)), width="100%")
+	else:
+		return html.H2("not yet")
 
 #
 # plotting currently best structure
@@ -116,16 +129,14 @@ def make_score_bar(n):
 
 	figure = go.Figure()
 	for i in range(runmax + 1):
-		now = df[df["run"]==i]
-		x = now.index.values
-		y = now[score]
-		formula = now.chemical_formula
+		df_now = df[df["run"]==i]
+		x = df_now.index.values
+		y = df_now[score]
 		color = "crimson" if i==runmax else colors[i]
 		opacity = 0.2 if i==0 else 1.0
 
 		figure.add_trace(go.Bar(x=x, y=y, marker_color=color, opacity=opacity, 
-							   #hovertext=formula,
-							   customdata=formula, hovertemplate="%{customdata}",
+							   customdata=df_now[["chemical_formula","unique_id"]], hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
 							   name="run " + str(i)))
 
 	figure.update_yaxes(range=[minval-0.01, maxval+0.01])

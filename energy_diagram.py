@@ -1,4 +1,4 @@
-import sys
+import os,sys
 import numpy as np
 import pandas as pd
 import argparse
@@ -41,6 +41,7 @@ num_rxn = len(y1)+1
 Ea  = y1[rds] + 0.2
 y1  = np.insert(y1, rds, y1[rds-1])
 
+
 x1 = np.arange(0, num_rxn)
 x1_latent = np.linspace(0, num_rxn-1, 100)
 f1 = interpolate.interp1d(x1, y1, kind="nearest")
@@ -53,7 +54,7 @@ f2 = interpolate.interp1d(x2, y2, kind="quadratic")
 y = np.array([])
 for i in x1_latent:
 	val1 = f1(i)
-	val2 = -1.0e-10
+	val2 = -1.0e10
 	try:
 		val2 = f2(i)
 	except:
@@ -65,6 +66,10 @@ p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
 p.set_xlabel("Steps")
 p.set_ylabel("Energy (eV)")
 
-filename = unique_id + "_" + "ped.png"
+filename = unique_id + "_" + "ene_diag.png"
 plt.savefig(filename)
+
+# save to logdir
+logdir = "./log/"
+os.system("cp {0:s} {1:s}".format(filename, logdir+"best_ene_diag.png"))
 
