@@ -64,7 +64,7 @@ numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
 num_epoch  = 500 # 500 seems better than 200
 printnum   = 50
-batch_size = 10  # 50  # 50 is better than 30
+batch_size = 50  # 50  # 50 is better than 30
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
@@ -374,7 +374,8 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 # Make fake examples: need some template -- should be fixed
 #
 base_element = "Pt"
-surf = fcc111(symbol=base_element, size=[3, 3, 4], a=4.0, vacuum=10.0)
+#surf = fcc111(symbol=base_element, size=[3, 3, 4], a=4.0, vacuum=10.0)
+surf = fcc111(symbol=base_element, size=[2, 2, 5], a=3.9, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
