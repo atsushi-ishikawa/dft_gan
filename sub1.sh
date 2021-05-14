@@ -50,7 +50,7 @@ fi
 
 # remove trash from previous run
 rm stdout* stderr* 2> /dev/null
-clean 2> /dev/null
+rm $submit_shell*.{e,o}[0-9]* 2> /dev/null
 rm $tmpdb 2> /dev/null
 
 for ((i=0; i<$max; i++)); do
