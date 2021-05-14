@@ -24,6 +24,8 @@ savefig = False
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
 
+check  = False
+
 # workdir to store vasp data
 #workdir = ""
 workdir = "/work/a_ishi/"
@@ -58,53 +60,53 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 5 # maximum number of geomtry optimization steps
+steps = 10 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
 	#xc     = "beef-vdw"
-	xc     = "pbe"
+	xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0
 	nelm   = 30
 	ibrion = -1
 	potim  = 0.2
-	algo   = "VeryFast"
+	algo   = "Fast"  # sometimes VeryFast fails
 	ismear = 1
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
 	kpts   = [2, 2, 1]
-	ispin  = 2
+	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 4
 	nsim   = npar
-	isym   = 0
-	lreal  = True
+	isym   = 0  # -1 is better?
+	lreal  = False
 	lorbit = 10  # to avoid error
 	lwave  = True if do_single_point else False
 	lcharg = True if do_single_point else False
-	ldipol = False
-	idipol = 3
+	# dipole currently switched off
+	#ldipol = False
+	#idipol = 3
 
 	optimize_unitcell = False
 
 	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
-					 kpts=[1, 1, 1], kgamma=True, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit, ldipol=False)
+					 kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
 	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
 					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, idipol=idipol, ldipol=ldipol)
+					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
 else:
 	calc_mol  = EMT()
 	calc_surf = EMT()
 	optimize_unitcell = False
 
 height = 1.8
-check  = False
 
-def set_unitcell_gasphase(Atoms, vacuum=12.0):
+def set_unitcell_gasphase(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1]) * vacuum
 	Atoms.set_cell(cell)
 	if "vasp" in calculator:
@@ -128,7 +130,7 @@ def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
 		en = atoms.get_potential_energy()
 	elif calc.name.lower() == "vasp":
 		# VASP
-		calc.int_params["ibrion"]  = 2
+		calc.int_params["ibrion"]  = 2  # 1
 		calc.int_params["nsw"]     = steps
 		calc.input_params["potim"] = potim
 		calc.exp_params["ediffg"]  = -fmax  # force based
@@ -269,7 +271,7 @@ for irxn in range(rxn_num):
 				nlayer = 4
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
-				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 
 			elif mol_type == "adsorbed":
@@ -290,7 +292,7 @@ for irxn in range(rxn_num):
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
-				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
 			else:
 				print("something wrong in determining mol_type")
@@ -311,11 +313,11 @@ for irxn in range(rxn_num):
 						atoms = tmpdb.get_atoms(id=past.id)
 						first_time = False
 
-			dir = workdir + unique_id + "_" + formula + "_"
+			dir = workdir + unique_id + "_" + formula
 			set_calculator_with_directory(atoms, calc, directory=dir)
 
 			first_or_not = "first time" if first_time else "already calculated"
-			print("now calculating {0:>10s} ... {1:s}".format(formula, first_or_not))
+			print("now calculating {0:>12s} ... {1:s}".format(formula, first_or_not))
 			if first_time:
 				if do_single_point:
 					# geometry optimization + single point energy calculation

@@ -10,6 +10,7 @@ import random
 # lattice constant
 elem = {"symbol": "Pt", "a": 3.90}
 
+#surf  = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=10.0)
 surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
 surf.pbc = True
 check = False # check structure or not
@@ -18,7 +19,7 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.3 * natoms)  # 5
+max_replace = int(0.3 * natoms)
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
 elem2 = ["Rh"]
 #elem2 = ["Pd"]
