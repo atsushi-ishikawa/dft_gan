@@ -1,13 +1,15 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=100
-max_sub=20
+num_data=1
+max_sub=1
 todolist="todolist.txt"
 tmpdb="tmp.db"
+
 dash_server="mio"
+
 dir=${HOME}/ase/nn_reac
 submit_shell=run_reaction_energy.sh
-delete_unfinished=True
+delete_unfinished=false
 
 # ---------------------------------------------------------------
 host=`hostname`
@@ -21,11 +23,11 @@ fi
 #
 # --- delete unfinished jobs ---
 #
-if [ $delete_unfinished ]; then
+if $delete_unfinished ; then
 	$stat > tmp$$.txt
 	grep $submit_shell tmp$$.txt | awk '{print $1}' | xargs echo
+	rm tmp$$.txt 
 fi
-rm tmp$$.txt
 #
 # --- surf_json does not exist... new run ---
 #
@@ -64,14 +66,15 @@ for ((i=0; i<$max; i++)); do
 	# do reaction energy calculation for id
 	# do rate calculation for id
 	#         
-	#python calc_reaction_energy.py --id $id
+	python calc_reaction_energy.py --id $id
 	#python rate.py --id $id
 	# or
-	$sub $submit_shell $id
+	#$sub $submit_shell $id
 
 	sleep 5
 done
 
 touch doing_reaction_energy_calc
-scp doing_reaction_energy_calc $dash_server:$dir
-
+if [ $host != $dash_server ]; then
+	scp doing_reaction_energy_calc $dash_server:$dir
+fi
