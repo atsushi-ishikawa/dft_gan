@@ -30,7 +30,6 @@ surf_json = args.surf_json
 reac_json = args.reac_json
 loss_file = args.loss_file
 
-
 if not os.path.exists(loss_file):
 	# prepare loss h5 file if not exits
 	h5file = h5py.File(loss_file, "w")
@@ -64,7 +63,7 @@ numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
 num_epoch  = 500 # 500 seems better than 200
 printnum   = 50
-batch_size = 50  # 50  # 50 is better than 30
+batch_size = 5  # 50  # 50 is better than 30
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
@@ -90,7 +89,6 @@ if not os.path.exists(log_dir):
 rank = pd.qcut(df[score], nclass, labels=False)
 df["rank"] = rank
 
-# print(df.head(numuse // 2 + 1))
 
 def make_dataloader(x=None, y=None, batch_size=10):
 	import numpy as np
@@ -172,7 +170,7 @@ class Generator(nn.Module):
 			nn.Linear(2*n_feature, 2*n_feature),
 			nn.BatchNorm1d(2*n_feature),
 			nn.LeakyReLU(0.2),
-			nn.Dropout(0.3),
+			#nn.Dropout(0.3),  # temporary killed (05/19)
 
 			nn.Linear(2*n_feature, natom),
 			nn.Sigmoid()  # output as (0,1)
@@ -332,15 +330,17 @@ def make_atomic_numbers(inputlist, reflist):
 	global scaler_selection
 
 	atom_num = {"Rh": 45, "Pd": 46, "Pt": 78}  # atomic numbers
+	first_elem  = "Pt"  # note: sholud be larger in atomic number
+	second_elem = "Pd"  # or "Rh"
 	# 3D --> 2D
 	if len(inputlist.shape) == 3:
 		inputlist = inputlist.reshape(batch_size, -1)
 
 	tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
 	if scaler_selection == "minmax":
-		tmplist = [list(map(lambda x: atom_num["Pt"] if x > 0.5 else atom_num["Rh"], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: atom_num[first_elem] if x > 0.5 else atom_num[second_elem], i)) for i in tmplist]
 	else:
-		tmplist = [list(map(lambda x: atom_num["Pt"] if x > np.mean(i) else atom_num["Rh"], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: atom_num[first_elem] if x > np.mean(i) else atom_num[second_elem], i)) for i in tmplist]
 
 	reflist = reflist.values.tolist()
 	#
@@ -374,8 +374,8 @@ samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
 # Make fake examples: need some template -- should be fixed
 #
 base_element = "Pt"
-surf = fcc111(symbol=base_element, size=[3, 3, 4], a=3.9, vacuum=10.0)
-#surf = fcc111(symbol=base_element, size=[2, 2, 5], a=3.9, vacuum=10.0)
+#surf = fcc111(symbol=base_element, size=[3, 3, 4], a=3.9, vacuum=10.0)
+surf = fcc111(symbol=base_element, size=[2, 2, 5], a=3.9, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file

@@ -116,9 +116,8 @@ def set_unitcell_gasphase(Atoms, vacuum=10.0):
 def set_calculator_with_directory(Atoms, calc, directory="."):
 	if "vasp" in calculator:
 		calc.directory = directory
-		Atoms.set_calculator(calc)
-	else:
-		pass
+
+	Atoms.set_calculator(calc)
 
 
 def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
