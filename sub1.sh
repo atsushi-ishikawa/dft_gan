@@ -1,7 +1,7 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=1
-max_sub=1
+num_data=100
+max_sub=10
 todolist="todolist.txt"
 tmpdb="tmp.db"
 
@@ -10,6 +10,8 @@ dash_server="mio"
 dir=${HOME}/ase/nn_reac
 submit_shell=run_reaction_energy.sh
 delete_unfinished=false
+
+use_queue=false
 
 # ---------------------------------------------------------------
 host=`hostname`
@@ -23,7 +25,7 @@ fi
 #
 # --- delete unfinished jobs ---
 #
-if $delete_unfinished ; then
+if $delete_unfinished; then
 	$stat > tmp$$.txt
 	grep $submit_shell tmp$$.txt | awk '{print $1}' | xargs echo
 	rm tmp$$.txt 
@@ -40,10 +42,10 @@ fi
 #
 nline=`cat $todolist | wc -l`
 
-if [ $nline -le $max_sub ]; then
-	max=$nline
-else
+if $use_queue && [ $nline -ge $max_sub ]; then
 	max=$max_sub
+else
+	max=$nline
 fi
 
 #
@@ -66,12 +68,12 @@ for ((i=0; i<$max; i++)); do
 	# do reaction energy calculation for id
 	# do rate calculation for id
 	#         
-	python calc_reaction_energy.py --id $id
-	#python rate.py --id $id
-	# or
-	#$sub $submit_shell $id
-
-	sleep 5
+	if $use_queue; then
+		$sub $submit_shell $id
+		sleep 5
+	else
+		python calc_reaction_energy.py --id $id
+	fi
 done
 
 touch doing_reaction_energy_calc

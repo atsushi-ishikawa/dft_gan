@@ -23,7 +23,7 @@ torch.manual_seed(seed)
 parser = argparse.ArgumentParser()
 parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
 parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
-parser.add_argument("--loss_file", default="loss.h5", help="output file for generator and descriminator losses")
+parser.add_argument("--loss_file", default="loss.h5", help="file for generator and descriminator losses")
 
 args = parser.parse_args()
 surf_json = args.surf_json
@@ -42,19 +42,18 @@ if not os.path.exists(loss_file):
 #
 # load data and put it to DataFrame
 #
-score = "rate"
 df1 = load_ase_json(surf_json)
 df2 = pd.read_json(reac_json)
 
 df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
-df  = df.sort_values(score, ascending=False)
+df  = df.sort_values("score", ascending=False)
 #
 # droping NaN in atomic numbers and score
 #
 df = df.dropna(subset=["atomic_numbers"])
-df = df.dropna(subset=[score])
+df = df.dropna(subset=["score"])
 numdata = len(df)
 #
 # parameters
@@ -63,7 +62,7 @@ numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
 num_epoch  = 500 # 500 seems better than 200
 printnum   = 50
-batch_size = 5  # 50  # 50 is better than 30
+batch_size = 10  # 50  # 50 is better than 30
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
@@ -85,8 +84,9 @@ if not os.path.exists(log_dir):
 	os.makedirs(log_dir)
 #
 # divide into groups according to score
+# note: rank in descending order --- highest: nclass-1 and lowest: 0
 #
-rank = pd.qcut(df[score], nclass, labels=False)
+rank = pd.qcut(df["score"], nclass, labels=False)
 df["rank"] = rank
 
 
@@ -363,13 +363,16 @@ gan(num_epoch=num_epoch)
 #
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
-
+#
+#
+#
+target_class = nclass-1
 fakesystem = []
 for target in range(nclass):
 	fakesystem.append(generate(G, target=target))
 
-print(fakesystem[0][0].astype(int).reshape(1, -1))
-samples = make_atomic_numbers(fakesystem[0], df["atomic_numbers"])
+print(fakesystem[target_class][0].astype(int).reshape(1, -1))
+samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #

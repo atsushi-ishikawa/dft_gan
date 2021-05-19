@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--id", help="id for surface system")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
 parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
-parser.add_argument("--reac_json",  default="reaction_energy.json", help="json for writing reaction energies")
+parser.add_argument("--reac_json",  default="reaction_energy.json", help="file to write reaction energy")
 
 args = parser.parse_args()
 unique_id  = args.id
@@ -60,7 +60,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 6 # maximum number of geomtry optimization steps
+steps = 50 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"

@@ -1,12 +1,14 @@
 #!/bin/sh
 
-cpu_team="whisky"
+cpu_team="mio"
 dir=${HOME}/ase/nn_reac/
-
-echo "downloading json files from $calculators:$dir"
+host=`hostname`
 
 # copy json file from VASP calculating clusters
-scp $cpu_team:$dir/{surf,reaction_energy}.json ./
+if [ $host != $cpu_team ]; then
+	echo "downloading json files from $calculators:$dir"
+	scp $cpu_team:$dir/{surf,reaction_energy}.json ./
+fi
 cp surf.json surf.json.bk
 cp reaction_energy.json reaction_energy.json.bk
 
@@ -19,8 +21,10 @@ touch doing_GAN
 python nn_reac.py
 python make_todo_list.py
 
-scp ./{surf.json,todolist.txt} $cpu_team:$dir
+# send
+if [ $host != $cpu_team ]; then
+	scp ./{surf.json,todolist.txt} $cpu_team:$dir
+fi
 
 rm doing_GAN 2> /dev/null
 touch doing_reaction_energy_calc
-
