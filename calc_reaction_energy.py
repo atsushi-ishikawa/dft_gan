@@ -60,7 +60,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 10 # maximum number of geomtry optimization steps
+steps = 6 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -80,7 +80,7 @@ if "vasp" in calculator:
 	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 4
+	npar   = 6
 	nsim   = npar
 	isym   = 0  # -1 is better?
 	lreal  = False
@@ -288,7 +288,7 @@ for irxn in range(rxn_num):
 					offset = (0.50, 0.50)
 
 				atoms  = surf.copy()
-				nlayer = 4
+				nlayer = 5
 				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
