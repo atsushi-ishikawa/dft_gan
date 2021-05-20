@@ -1,6 +1,6 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=100
+num_data=20
 max_sub=10
 todolist="todolist.txt"
 tmpdb="tmp.db"
@@ -9,9 +9,8 @@ dash_server="mio"
 
 dir=${HOME}/ase/nn_reac
 submit_shell=run_reaction_energy.sh
-delete_unfinished=false
-
-use_queue=false
+delete_unfinished=true
+use_queue=true
 
 # ---------------------------------------------------------------
 host=`hostname`

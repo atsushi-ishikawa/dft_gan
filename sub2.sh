@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cpu_team="mio"
+cpu_team="whisky"
 dir=${HOME}/ase/nn_reac/
 host=`hostname`
 

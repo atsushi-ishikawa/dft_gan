@@ -3,7 +3,7 @@
 #$ -S /bin/bash
 #$ -cwd
 #$ -q all.q
-#$ -pe openmpi12 12
+#$ -pe openmpi24 24
 #$ -l hostname=whisky1?
 
 ID=$1
