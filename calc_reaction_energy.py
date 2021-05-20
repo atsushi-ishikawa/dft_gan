@@ -60,7 +60,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 50 # maximum number of geomtry optimization steps
+steps = 20 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"

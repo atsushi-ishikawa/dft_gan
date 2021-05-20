@@ -60,13 +60,15 @@ numdata = len(df)
 #
 numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-num_epoch  = 500 # 500 seems better than 200
+num_epoch  = 1000 # 1000 seems better than 500
+#num_epoch  = 500 # 1000 seems better than 500
 printnum   = 50
-batch_size = 10  # 50  # 50 is better than 30
+batch_size = numdata//5  # from experience
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
 b2 = 0.999
+dropoutrate = 0.3
 
 scaler_selection = "minmax"
 #scaler_selection = "standard"
@@ -130,13 +132,13 @@ class Discriminator(nn.Module):
 			nn.Linear((1 + nclass)*natom, 2*nchannel),
 			nn.BatchNorm1d(2*nchannel),  # need
 			nn.LeakyReLU(0.2),  # need
-			nn.Dropout(0.3), # test
+			nn.Dropout(dropoutrate), # test
 
 			#nn.utils.spectral_norm(nn.Linear((1 + nclass) * natom, 2*nchannel)), # test
 			nn.Linear(2*nchannel, 2*nchannel),
 			nn.BatchNorm1d(2 * nchannel),  # need
 			nn.LeakyReLU(0.2),  # need
-			nn.Dropout(0.3), # test
+			nn.Dropout(dropoutrate), # test
 
 			nn.Linear(2*nchannel, 1),
 
@@ -165,12 +167,12 @@ class Generator(nn.Module):
 			nn.Linear(n_feature, 2*n_feature),  # 2*n-->4*n is not good
 			nn.BatchNorm1d(2*n_feature),
 			nn.LeakyReLU(0.2),
-			nn.Dropout(0.3),
+			nn.Dropout(dropoutrate),
 
 			nn.Linear(2*n_feature, 2*n_feature),
 			nn.BatchNorm1d(2*n_feature),
 			nn.LeakyReLU(0.2),
-			#nn.Dropout(0.3),  # temporary killed (05/19)
+			nn.Dropout(dropoutrate),  # temporary killed (05/19)
 
 			nn.Linear(2*n_feature, natom),
 			nn.Sigmoid()  # output as (0,1)
