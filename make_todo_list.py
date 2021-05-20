@@ -18,7 +18,7 @@ df2 = df2.set_index("unique_id")
 
 df  = pd.concat([df1, df2], axis=1)
 
-score = "rate"
+score = "score"
 if score in df.columns:
 	df = df[df[score].isnull()]
 else:

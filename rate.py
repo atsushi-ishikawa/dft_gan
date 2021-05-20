@@ -89,7 +89,8 @@ for id in range(num_data):
 		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma)
 		lograte = np.log10(rate)
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "rate": lograte}
+		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "score": lograte}
+		#data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "score": -1.0*deltaE[0]}
 
 		# add to json
 		with open(reac_json, "r") as f:
@@ -103,8 +104,8 @@ for id in range(num_data):
 			with open(reac_json, "w") as f:
 				json.dump(datum, f, indent=4)
 
-		print("theta[N] = {0:5.3e}, theta[vac] = {1:5.3e}".format(theta[ads["N"]], theta[ads["vac"]]))
-		print("Ea = {0:5.3f} eV, log(rate) = {1:5.3f}".format(Ea, lograte))
+		#print("theta[N] = {0:5.3e}, theta[vac] = {1:5.3e}".format(theta[ads["N"]], theta[ads["vac"]]))
+		#print("Ea = {0:5.3f} eV, log(rate) = {1:5.3f}".format(Ea, lograte))
 	else:
 		print("reaction energy not available")
 

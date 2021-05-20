@@ -20,7 +20,7 @@ best = args.best
 eneg_file = "diag.h5"
 
 if best:
-	unique_id = find_highest(json=reac_json, score="rate")
+	unique_id = find_highest(json=reac_json, score="score")
 else:
 	unique_id = args.id
 
@@ -45,7 +45,7 @@ y1  = np.insert(y1, rds, y1[rds-1])
 
 
 x1 = np.arange(0, num_rxn)
-x1_latent = np.linspace(0, num_rxn-1, 100)
+x1_latent = np.linspace(0, num_rxn-1, 500)
 f1 = interpolate.interp1d(x1, y1, kind="nearest")
 
 x2 = [rds-0.5, rds, rds+0.5]

@@ -127,7 +127,6 @@ def plot_structure(n):
 @app.callback(Output("graph_bar", "figure"),
              [Input("interval-component", "n_intervals")])
 def make_score_bar(n):
-	score = "rate"
 	df1 = load_ase_json(surf_json)
 	df2 = pd.read_json(reac_json)
 
@@ -135,14 +134,14 @@ def make_score_bar(n):
 	df2 = df2.set_index("unique_id")
 
 	df = pd.concat([df1, df2], axis=1)
-	df = df[df[score].notna()]
+	df = df[df["score"].notna()]
 
 	runmax = df["run"].max()
 	runmin = df["run"].min()
-	maxval = df[score].max()
-	minval = df[score].min()
+	maxval = df["score"].max()
+	minval = df["score"].min()
 
-	df = df.sort_values(score, ascending=False)
+	df = df.sort_values("score", ascending=False)
 	df = df.reset_index()
 
 	colors = get_colorpalette("viridis", runmax+1)
@@ -151,7 +150,7 @@ def make_score_bar(n):
 	for i in range(runmax + 1):
 		df_now = df[df["run"]==i]
 		x = df_now.index.values
-		y = df_now[score]
+		y = df_now["score"]
 		color = "crimson" if i==runmax else colors[i]
 		opacity = 0.2 if i==0 else 1.0
 
@@ -160,10 +159,10 @@ def make_score_bar(n):
 							   hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
 							   name="run " + str(i)))
 
-	#figure.update_yaxes(range=[minval-0.01, maxval+0.01])
+	figure.update_yaxes(range=[minval-0.01*minval, maxval+0.01*maxval])
 	figure.update_layout(margin=dict(r=20, t=20, b=20),
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
-						 yaxis_title=score,
+						 yaxis_title="score",
 						 height=height)
 	return figure
 
