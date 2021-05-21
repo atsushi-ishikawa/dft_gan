@@ -159,7 +159,7 @@ def make_score_bar(n):
 							   hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
 							   name="run " + str(i)))
 
-	figure.update_yaxes(range=[minval-0.01*minval, maxval+0.01*maxval])
+	figure.update_yaxes(range=[minval-0.03*abs(minval), maxval+0.03*abs(maxval)])
 	figure.update_layout(margin=dict(r=20, t=20, b=20),
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 yaxis_title="score",
