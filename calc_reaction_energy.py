@@ -60,7 +60,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 20 # maximum number of geomtry optimization steps
+steps = 30 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -120,7 +120,7 @@ def set_calculator_with_directory(Atoms, calc, directory="."):
 	Atoms.set_calculator(calc)
 
 
-def run_optimizer(atoms, fmax=0.1, steps=10, optimize_unitcell=False):
+def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False):
 	calc = atoms.get_calculator()
 	if calc.name.lower() == "emt":
 		# EMT

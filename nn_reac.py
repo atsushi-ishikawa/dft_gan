@@ -6,7 +6,6 @@ import torch.nn as nn
 from tools import load_ase_json
 from ase.db import connect
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-import matplotlib.pyplot as plt
 import h5py
 import numpy as np
 import argparse

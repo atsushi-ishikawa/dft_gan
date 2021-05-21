@@ -4,7 +4,6 @@ import pandas as pd
 import argparse
 import json
 from scipy import interpolate
-import matplotlib.pyplot as plt
 import seaborn as sns
 from tools import find_highest
 import h5py
@@ -80,6 +79,7 @@ with h5py.File(eneg_file, "a") as f:
 # when saving png file
 savefig = False
 if savefig:
+	import matplotlib.pyplot as plt
 	sns.set(style="darkgrid", rc={"lines.linewidth": 2.0, "figure.figsize": (10, 4)})
 	p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
 	p.set_xlabel("Steps")
