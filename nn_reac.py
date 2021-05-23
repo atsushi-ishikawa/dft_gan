@@ -330,9 +330,9 @@ def make_atomic_numbers(inputlist, reflist):
 	"""
 	global scaler_selection
 
-	atom_num = {"Rh": 45, "Pd": 46, "Pt": 78}  # atomic numbers
-	first_elem  = "Pt"  # note: sholud be larger in atomic number
-	second_elem = "Pd"  # or "Rh"
+	atom_num = {"Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}  # atomic numbers
+	first_elem  = "Ru"
+	second_elem = "Pt"
 	# 3D --> 2D
 	if len(inputlist.shape) == 3:
 		inputlist = inputlist.reshape(batch_size, -1)

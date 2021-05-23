@@ -22,7 +22,8 @@ natoms = len(surf.get_atomic_numbers())
 max_replace = int(0.3 * natoms)
 # elementlist = ["Al", "Cu", "Ag", "Au", "Ni", "Pt"]
 #elem2 = ["Rh"]
-elem2 = ["Pd"]
+#elem2 = ["Pd"]
+elem2 = ["Ru"]
 
 outjson = "surf.json"
 
