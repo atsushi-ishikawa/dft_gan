@@ -1,10 +1,9 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=20
-max_sub=10
+num_data=40
+max_sub=40
 todolist="todolist.txt"
 tmpdb="tmp.db"
-
 dash_server="mio"
 
 dir=${HOME}/ase/nn_reac
@@ -69,7 +68,7 @@ for ((i=0; i<$max; i++)); do
 	#         
 	if $use_queue; then
 		$sub $submit_shell $id
-		sleep 5
+		sleep 4
 	else
 		python calc_reaction_energy.py --id $id
 	fi
