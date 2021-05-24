@@ -6,7 +6,7 @@ host=`hostname`
 
 # copy json file from VASP calculating clusters
 if [ $host != $cpu_team ]; then
-	echo "downloading json files from $calculators:$dir"
+	echo "downloading json files from $cpu_team:$dir"
 	scp $cpu_team:$dir/{surf,reaction_energy}.json ./
 fi
 cp surf.json surf.json.bk
@@ -23,6 +23,7 @@ python make_todo_list.py
 
 # send
 if [ $host != $cpu_team ]; then
+	echo "sending json file and to-do-list to $cpu_team:$dir"
 	scp ./{surf.json,todolist.txt} $cpu_team:$dir
 fi
 
