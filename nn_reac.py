@@ -340,23 +340,23 @@ def make_atomic_numbers(inputlist, reflist):
 	if len(inputlist.shape) == 3:
 		inputlist = inputlist.reshape(batch_size, -1)
 
-	tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
+	lists = inputlist.astype(int).tolist()  # float --> int --> python list
 	if scaler_selection == "minmax":
-		tmplist = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in tmplist]
+		lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], ilist)) for ilist in lists]
 	else:
-		tmplist = [list(map(lambda x: elements[0] if x < np.mean(tmplist) else elements[-1], i)) for i in tmplist]
+		lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], ilist)) for ilist in lists]
 
 	reflist = reflist.values.tolist()
 	#
 	# make uniquelist
 	#
 	newlist = []
-	for i in tmplist:
-		i = list(i)
+	for ilist in lists:
+		ilist = list(ilist)
 		# if i not in newlist:
-		if i not in reflist:
-			newlist.append(i)
-			reflist.append(i)
+		if ilist not in reflist:
+			newlist.append(ilist)
+			reflist.append(ilist)
 
 	return newlist
 
