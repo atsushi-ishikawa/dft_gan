@@ -330,18 +330,21 @@ def make_atomic_numbers(inputlist, reflist):
 	"""
 	global scaler_selection
 
-	atom_num = {"Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}  # atomic numbers
-	first_elem  = "Ru"
-	second_elem = "Pt"
+	elements = ["Ru", "Pt"]
+
+	atomic_number = {"Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
+	elements = list(map(lambda x: atomic_number[x], elements))
+	elements = sorted(elements)
+
 	# 3D --> 2D
 	if len(inputlist.shape) == 3:
 		inputlist = inputlist.reshape(batch_size, -1)
 
 	tmplist = inputlist.astype(int).tolist()  # float --> int --> python list
 	if scaler_selection == "minmax":
-		tmplist = [list(map(lambda x: atom_num[first_elem] if x > 0.5 else atom_num[second_elem], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in tmplist]
 	else:
-		tmplist = [list(map(lambda x: atom_num[first_elem] if x > np.mean(i) else atom_num[second_elem], i)) for i in tmplist]
+		tmplist = [list(map(lambda x: elements[0] if x < np.mean(tmplist) else elements[-1], i)) for i in tmplist]
 
 	reflist = reflist.values.tolist()
 	#
