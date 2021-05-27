@@ -51,6 +51,10 @@ tmpdb = connect(tmpdbfile)
 # molecule collection from ase
 collection = g2
 
+# surface information
+nlayer = 5
+nrelax = nlayer // 2
+
 if not os.path.isfile(reac_json):
 	# reac_json does not exist -- make
 	with open(reac_json, "w") as f:
@@ -267,8 +271,6 @@ for irxn in range(rxn_num):
 				# surface calculation
 				atoms = surf.copy()
 				if check: view(atoms)
-				nlayer = 4
-				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc   = calc_surf
@@ -278,17 +280,15 @@ for irxn in range(rxn_num):
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
 				if site == "atop":
-					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.50, 0.50)  # for [2, 2] supercell
+					offset = (0.33, 0.33)  # for [3, 3] supercell
+					#offset = (0.50, 0.50)  # for [2, 2] supercell
 				elif site == "fcc":
-					#offset = (0.20, 0.20)  # for [3, 3] supercell
-					offset = (0.33, 0.33)  # for [2, 2] supercell
+					offset = (0.20, 0.20)  # for [3, 3] supercell
+					#offset = (0.33, 0.33)  # for [2, 2] supercell
 				else:
 					offset = (0.50, 0.50)
 
 				atoms  = surf.copy()
-				nlayer = 5
-				nrelax = nlayer // 2
 				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
 				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
