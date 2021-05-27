@@ -52,7 +52,7 @@ tmpdb = connect(tmpdbfile)
 collection = g2
 
 # surface information
-nlayer = 5
+nlayer = 4
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
