@@ -68,8 +68,8 @@ steps = 30 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	#xc     = "beef-vdw"
-	xc     = "rpbe"
+	xc     = "beef-vdw"
+	#xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0
 	nelm   = 30

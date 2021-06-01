@@ -330,9 +330,10 @@ def make_atomic_numbers(inputlist, reflist):
 	"""
 	global scaler_selection
 
-	elements = ["Ru", "Pt"]
+	#elements = ["Ru", "Pt"]
+	elements = ["Ru", "Ni"]
 
-	atomic_number = {"Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
+	atomic_number = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
 	elements = list(map(lambda x: atomic_number[x], elements))
 	elements = sorted(elements)
 
@@ -368,8 +369,6 @@ gan(num_epoch=num_epoch)
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
 #
-#
-#
 target_class = nclass-1
 fakesystem = []
 for target in range(nclass):
@@ -380,7 +379,7 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-base_element = "Pt"
+base_element = "Ni"
 #surf = fcc111(symbol=base_element, size=[3, 3, 4], a=3.9, vacuum=10.0)
 surf = fcc111(symbol=base_element, size=[2, 2, 5], a=3.9, vacuum=10.0)
 check = False
