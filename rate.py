@@ -62,7 +62,7 @@ for id in range(num_data):
 		# activation energy
 		# Bronsted-Evans-Polanyi
 		alpha = 1.2
-		beta  = 0.5
+		beta  = 1.0
 		tmp = alpha*deltaE + beta
 		Ea  = tmp[rds]
 
