@@ -59,7 +59,7 @@ numdata = len(df)
 #
 numuse     = int(numdata * 1.0)
 nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-num_epoch  = 1000 # 1000 seems better than 500
+num_epoch  = 10 # 1000 seems better than 500
 #num_epoch  = 500 # 1000 seems better than 500
 printnum   = 50
 batch_size = numdata//5  # from experience
@@ -323,7 +323,7 @@ def gan(num_epoch=100):
 
 def make_atomic_numbers(inputlist, reflist):
 	"""
-	Assuming (0,1), after scaed.
+	Assuming atomic number sequence is transformed to (0,1).
 	:param inputlist
 	:param reflist
 	:return: newlist
@@ -333,8 +333,8 @@ def make_atomic_numbers(inputlist, reflist):
 	#elements = ["Ru", "Pt"]
 	elements = ["Ru", "Ni"]
 
-	atomic_number = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
-	elements = list(map(lambda x: atomic_number[x], elements))
+	AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
+	elements = list(map(lambda x: AN[x], elements))
 	elements = sorted(elements)
 
 	# 3D --> 2D
@@ -379,9 +379,8 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-base_element = "Ni"
-#surf = fcc111(symbol=base_element, size=[3, 3, 4], a=3.9, vacuum=10.0)
-surf = fcc111(symbol=base_element, size=[2, 2, 5], a=3.9, vacuum=10.0)
+#surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.9, vacuum=10.0)
+surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.9, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
