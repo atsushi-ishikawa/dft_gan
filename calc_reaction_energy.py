@@ -52,7 +52,7 @@ tmpdb = connect(tmpdbfile)
 collection = g2
 
 # surface information
-nlayer = 4
+nlayer = 5
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
@@ -81,7 +81,7 @@ if "vasp" in calculator:
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
 	kpts   = [2, 2, 1]
-	ispin  = 1
+	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
@@ -280,11 +280,11 @@ for irxn in range(rxn_num):
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
 				if site == "atop":
-					offset = (0.33, 0.33)  # for [3, 3] supercell
-					#offset = (0.50, 0.50)  # for [2, 2] supercell
+					offset = (0.50, 0.50)  # for [2, 2] supercell
+					#offset = (0.33, 0.33)  # for [3, 3] supercell
 				elif site == "fcc":
-					offset = (0.20, 0.20)  # for [3, 3] supercell
-					#offset = (0.33, 0.33)  # for [2, 2] supercell
+					offset = (0.33, 0.33)  # for [2, 2] supercell
+					#offset = (0.20, 0.20)  # for [3, 3] supercell
 				else:
 					offset = (0.50, 0.50)
 
@@ -364,7 +364,6 @@ for irxn in range(rxn_num):
 	#
 if check: view(surf)
 
-#data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "status": "done"}
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
 
