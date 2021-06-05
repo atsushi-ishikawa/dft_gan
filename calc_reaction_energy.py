@@ -52,7 +52,7 @@ tmpdb = connect(tmpdbfile)
 collection = g2
 
 # surface information
-nlayer = 5
+nlayer = 4
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
@@ -280,11 +280,11 @@ for irxn in range(rxn_num):
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
 				if site == "atop":
-					offset = (0.50, 0.50)  # for [2, 2] supercell
-					#offset = (0.33, 0.33)  # for [3, 3] supercell
+					#offset = (0.50, 0.50)  # for [2, 2] supercell
+					offset = (0.33, 0.33)  # for [3, 3] supercell
 				elif site == "fcc":
-					offset = (0.33, 0.33)  # for [2, 2] supercell
-					#offset = (0.20, 0.20)  # for [3, 3] supercell
+					#offset = (0.33, 0.33)  # for [2, 2] supercell
+					offset = (0.20, 0.20)  # for [3, 3] supercell
 				else:
 					offset = (0.50, 0.50)
 
@@ -356,7 +356,7 @@ for irxn in range(rxn_num):
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
 
-	if abs(dE) > 5.0:
+	if abs(dE) > 10.0:
 		print("errorous reaction energy ... quit")
 		sys.exit(1)
 	#

@@ -11,8 +11,8 @@ import random
 #elem = {"symbol": "Pt", "a": 3.9}
 elem = {"symbol": "Ni", "a": 3.5}
 
-surf  = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=10.0)
-#surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
+#surf  = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=10.0)
+surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
 surf.pbc = True
 check = False # check structure or not
 calc  = EMT()

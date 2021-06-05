@@ -378,8 +378,8 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.5, vacuum=10.0)
-#surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.9, vacuum=10.0)
+#surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.5, vacuum=10.0)
+surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.5, vacuum=10.0)
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
