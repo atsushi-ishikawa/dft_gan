@@ -1,19 +1,26 @@
-from ase.build import fcc111
+from ase.build import fcc111, bulk, surface
 from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
+from ase.io import read, write
 import numpy as np
 import os
 import sys
 import random
 
+argvs = sys.argv
+num_data = int(argvs[1])
+
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
 elem = {"symbol": "Ni", "a": 3.5}
 
-#surf  = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=10.0)
-surf  = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
-surf.pbc = True
+#surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=10.0)
+#surf = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=10.0)
+bulk = bulk(name=elem["symbol"], crystalstructure="fcc", a=elem["a"], cubic=True)
+surf = surface(bulk, indices=[5,1,1], layers=14, vacuum=10.0, periodic=True)
+surf = surf*[1,2,1]
+
 check = False # check structure or not
 calc  = EMT()
 #
@@ -31,8 +38,6 @@ outjson = "surf.json"
 if os.path.exists(outjson):
 	os.remove(outjson)
 
-argvs = sys.argv
-num_data = int(argvs[1])
 
 db = connect(outjson)
 #
@@ -70,5 +75,6 @@ for i in range(num_data):
 
 	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
+	#write("POSCAR", surf_copy)
 	id += 1
 
