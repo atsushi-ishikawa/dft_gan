@@ -17,6 +17,7 @@ import argparse
 import shutil
 import socket
 
+debug = True
 # whether to cleanup working directory for vasp
 clean   = False
 # save figures for structure
@@ -52,7 +53,8 @@ tmpdb = connect(tmpdbfile)
 collection = g2
 
 # surface information
-nlayer = 4
+#nlayer = 4
+nlayer = 14
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
@@ -64,15 +66,15 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db1 = connect(surf_json)
-steps = 30 # maximum number of geomtry optimization steps
+steps = 10 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
 	xc     = "beef-vdw"
-	#xc     = "rpbe"
+	#xc     = "pbe"
 	ivdw   = 0
-	nsw    = 0
-	nelm   = 30
+	nsw    = 0  # steps
+	nelm   = 40
 	ibrion = -1
 	potim  = 0.2
 	algo   = "Fast"  # sometimes VeryFast fails
@@ -80,20 +82,20 @@ if "vasp" in calculator:
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = ediff * 0.1
-	kpts   = [2, 2, 1]
-	ispin  = 2
+	kpts   = [1, 1, 1]
+	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
 	nsim   = npar
 	isym   = 0  # -1 is better?
-	lreal  = False
+	lreal  = True
 	lorbit = 10  # to avoid error
 	lwave  = True if do_single_point else False
 	lcharg = True if do_single_point else False
 	# dipole currently switched off
-	#ldipol = False
-	#idipol = 3
+	ldipol = True
+	idipol = 3
 
 	optimize_unitcell = False
 
@@ -102,13 +104,13 @@ if "vasp" in calculator:
 					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
 	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
 					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit)
+					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
 else:
 	calc_mol  = EMT()
 	calc_surf = EMT()
 	optimize_unitcell = False
 
-height = 1.8
+height = 1.6
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1]) * vacuum
@@ -281,10 +283,14 @@ for irxn in range(rxn_num):
 				chem.rotate(180, "y")
 				if site == "atop":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
-					offset = (0.33, 0.33)  # for [3, 3] supercell
+					#offset = (0.33, 0.33)  # for [3, 3] supercell
+					#offset = (0.55, 0.30)  # for stepped
+					offset = (0.35, 0.38)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
-					offset = (0.20, 0.20)  # for [3, 3] supercell
+					#offset = (0.20, 0.20)  # for [3, 3] supercell
+					#offset = (0.70, 0.30)  # for stepped
+					offset = (0.25, 0.25)  # for stepped
 				else:
 					offset = (0.50, 0.50)
 
@@ -338,6 +344,10 @@ for irxn in range(rxn_num):
 				past = tmpdb.get(id=past.id)
 				en = past.data.energy
 
+			if debug:
+				print("coef=",coefs[imol])
+				print("calculated energy=", en)
+
 			E += coefs[imol]*en
 
 			# recording to database
@@ -355,6 +365,9 @@ for irxn in range(rxn_num):
 	dE = energies["product"] - energies["reactant"]
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
+	if debug:
+		print("reactant", energies["reactant"])
+		print("product",  energies["product"])
 
 	if abs(dE) > 10.0:
 		print("errorous reaction energy ... quit")
