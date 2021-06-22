@@ -17,7 +17,6 @@ import argparse
 import shutil
 import socket
 
-debug = True
 # whether to cleanup working directory for vasp
 clean   = False
 # save figures for structure
@@ -53,8 +52,8 @@ tmpdb = connect(tmpdbfile)
 collection = g2
 
 # surface information
-#nlayer = 4
-nlayer = 14
+nlayer = 4
+#nlayer = 14
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
@@ -65,13 +64,13 @@ if not os.path.isfile(reac_json):
 print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
-db1 = connect(surf_json)
+db = connect(surf_json)
 steps = 10 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	xc     = "beef-vdw"
-	#xc     = "pbe"
+	#xc     = "beef-vdw"
+	xc     = "pbe"
 	ivdw   = 0
 	nsw    = 0  # steps
 	nelm   = 40
@@ -88,16 +87,14 @@ if "vasp" in calculator:
 	pp     = "potpaw_PBE.54"
 	npar   = 6
 	nsim   = npar
-	isym   = 0  # -1 is better?
+	isym   = 0
 	lreal  = True
 	lorbit = 10  # to avoid error
 	lwave  = True if do_single_point else False
 	lcharg = True if do_single_point else False
-	# dipole currently switched off
+
 	ldipol = True
 	idipol = 3
-
-	optimize_unitcell = False
 
 	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
 					 kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
@@ -110,7 +107,7 @@ else:
 	calc_surf = EMT()
 	optimize_unitcell = False
 
-height = 1.6
+height = 1.4
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1]) * vacuum
@@ -126,8 +123,9 @@ def set_calculator_with_directory(Atoms, calc, directory="."):
 	Atoms.set_calculator(calc)
 
 
-def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False):
+def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False, keep_cell_shape=False):
 	calc = atoms.get_calculator()
+
 	if calc.name.lower() == "emt":
 		# EMT
 		opt = BFGS(atoms)
@@ -135,31 +133,57 @@ def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False):
 		en = atoms.get_potential_energy()
 	elif calc.name.lower() == "vasp":
 		# VASP
-		calc.int_params["ibrion"]  = 2  # 1
+		calc.int_params["ibrion"]  = 2
 		calc.int_params["nsw"]     = steps
 		calc.input_params["potim"] = potim
 		calc.exp_params["ediffg"]  = -fmax  # force based
+
 		if optimize_unitcell:
-			calc.int_params["isif"] = 4
-			calc.exp_params["ediffg"] = ediff * 0.1  # energy based
-		atoms.set_calculator(calc)
-		en = atoms.get_potential_energy()
+			if keep_cell_shape:
+				# step1: cell volume
+				calc.int_params["isif"]    = 7
+				calc.int_params["nsw"]     = steps
+				calc.input_params["potim"] = potim
+				calc.exp_params["ediffg"]  = ediff * 0.1  # energy based
+				atoms.set_calculator(calc)
+				atoms.get_potential_energy()
+
+				# step2: ionic 
+				calc.int_params["isif"]   = 2
+				calc.exp_params["ediffg"] = -fmax
+				atoms.set_calculator(calc)
+			else:
+				# ionic + cell
+				calc.int_params["isif"]   = 4
+				calc.exp_params["ediffg"] = ediff * 0.1  # energy based
+				atoms.set_calculator(calc)
+		else:
+			# ionic
+			calc.int_params["isif"]    =  2
+			calc.int_params["nsw"]     =  steps
+			calc.input_params["potim"] =  potim
+			calc.exp_params["ediffg"]  = -fmax
 	else:
 		print("use vasp or emt. now ", calc.name)
 		sys.exit(1)
+
+	# do calculation
+	en = atoms.get_potential_energy()
+
 	#
 	# reset vasp calculator to single point energy's one
 	#
-	if calc.name.lower() == "vasp" and do_single_point:
-		calc.int_params["ibrion"]  = -1
-		calc.int_params["nsw"]     = 0
-		calc.int_params["isif"]    = 2
-		calc.int_params["istart"]  = 1
-		calc.int_params["icharg"]  = 1
-		calc.input_params["potim"] = 0
-		atoms.set_calculator(calc)
+	if calc.name.lower() == "vasp":
+		if do_single_point:
+			calc.int_params["ibrion"]  = -1
+			calc.int_params["nsw"]     =  0
+			calc.int_params["isif"]    =  2
+			calc.int_params["istart"]  =  1
+			calc.int_params["icharg"]  =  1
+			calc.input_params["potim"] =  0
+			atoms.set_calculator(calc)
 
-	return en
+	return en, atoms
 
 
 def get_mol_type(mol, site):
@@ -174,9 +198,9 @@ def get_mol_type(mol, site):
 	return mol_type
 
 
-def add_to_json(jsonfile, dict):
+def add_to_json(jsonfile, data):
 	#
-	# add to database
+	# add data to database
 	#
 	with open(jsonfile, "r") as f:
 	# remove "doing" record as calculation is done
@@ -186,10 +210,11 @@ def add_to_json(jsonfile, dict):
 				datum.pop(i)
 				break
 
-		datum.append(dict)
+		datum.append(data)
 
 	with open(jsonfile, "w") as f:
 		json.dump(datum, f, indent=4)
+
 
 def savefig_atoms(atoms, filename):
 	import matplotlib.pyplot as plt
@@ -207,7 +232,7 @@ reactionfile = "nh3.txt"
 (r_ads, r_site, r_coef,  p_ads, p_site, p_coef) = get_reac_and_prod(reactionfile)
 rxn_num = get_number_of_reaction(reactionfile)
 
-surf = db1.get_atoms(unique_id=unique_id)
+surf = db.get_atoms(unique_id=unique_id).copy()
 
 try:
 	df_reac = pd.read_json(reac_json)
@@ -262,21 +287,23 @@ for irxn in range(rxn_num):
 			mol_type = get_mol_type(chem, site)
 
 			if mol_type == "gaseous":
-				# gas calculation
+				# gas-phase species
 				atoms = Atoms(chem)
 				if check: view(atoms)
 				set_unitcell_gasphase(atoms)
 				atoms.center()
 				calc = calc_mol
+				optimize_unitcell = False
 
 			elif mol_type == "surf":
-				# surface calculation
+				# bare surface
 				atoms = surf.copy()
 				if check: view(atoms)
-				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
-				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
-				calc   = calc_surf
-
+				atoms = fix_lower_surface(atoms, nlayer, nrelax)
+				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				calc = calc_surf
+				optimize_unitcell = True
+ 
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
 				chem = collection[mol[0]]
@@ -284,21 +311,25 @@ for irxn in range(rxn_num):
 				if site == "atop":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					#offset = (0.55, 0.30)  # for stepped
-					offset = (0.35, 0.38)  # for stepped
+					offset = (0.40, 0.50)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
-					#offset = (0.70, 0.30)  # for stepped
-					offset = (0.25, 0.25)  # for stepped
+					offset = (0.23, 0.30)  # for stepped
 				else:
 					offset = (0.50, 0.50)
 
-				atoms  = surf.copy()
-				atoms  = fix_lower_surface(atoms, nlayer, nrelax)
+				surf_formula = surf.get_chemical_formula()
+				name = surf_formula + "gas" + unique_id
+				past  = tmpdb.get(name=name)
+				surf  = tmpdb.get_atoms(id=past.id)
+				atoms = surf
+
+				atoms = fix_lower_surface(atoms, nlayer, nrelax)
 				add_adsorbate(atoms, chem, offset=offset, height=height)
-				#atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
-				calc   = calc_surf
+				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+				calc  = calc_surf
+				optimize_unitcell = False
 			else:
 				print("something wrong in determining mol_type")
 				sys.exit(1)
@@ -308,13 +339,13 @@ for irxn in range(rxn_num):
 			#
 			formula = atoms.get_chemical_formula()
 			try:
-				#past = tmpdb.get(name=formula + site + site_pos + config)
 				past = tmpdb.get(name = formula + site + unique_id)
 			except:
 				first_time = True
 			else:
 				if site == past.data.site:
 					if len(mol) == 1:
+						# found in tmpdb
 						atoms = tmpdb.get_atoms(id=past.id)
 						first_time = False
 
@@ -327,13 +358,13 @@ for irxn in range(rxn_num):
 				if do_single_point:
 					# geometry optimization + single point energy calculation
 					sys.stdout.flush()
-					en = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+					en, atoms = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
 					sys.stdout.flush()
-					en = atoms.get_potential_energy()
+					en = atoms.get_potential_energy() # single point
 				else:
 					# geometry optimization only
 					sys.stdout.flush()
-					en = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+					en, atoms = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell, keep_cell_shape=True)
 
 				if savefig and mol_type == "adsorbed":
 					savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
@@ -344,30 +375,23 @@ for irxn in range(rxn_num):
 				past = tmpdb.get(id=past.id)
 				en = past.data.energy
 
-			if debug:
-				print("coef=",coefs[imol])
-				print("calculated energy=", en)
-
 			E += coefs[imol]*en
 
 			# recording to database
 			if(first_time):
-				#id = tmpdb.reserve(name = formula + site + site_pos + config)
 				id = tmpdb.reserve(name = formula + site + unique_id)
 				if id is None: # somebody is writing to db
 					continue
 				else:
-					#tmpdb.write(tmp, name=formula + site + site_pos + config, id=id, data={'site':site, 'site_pos':site_pos, 'config':config})
-					tmpdb.write(atoms, name=formula + site + unique_id, id=id, data={"energy": en, "site": site})
+					name = formula + site + unique_id
+					tmpdb.write(atoms, name=name, id=id, data={"energy": en, "site": site})
 
 		energies[side] = E
+
 
 	dE = energies["product"] - energies["reactant"]
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
-	if debug:
-		print("reactant", energies["reactant"])
-		print("product",  energies["product"])
 
 	if abs(dE) > 10.0:
 		print("errorous reaction energy ... quit")
@@ -379,4 +403,5 @@ if check: view(surf)
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
+
 

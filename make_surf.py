@@ -15,14 +15,16 @@ vacuum = 10.0
 
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
-elem = {"symbol": "Ni", "a": 3.5}
+#elem = {"symbol": "Ni", "a": 3.5}
+elem = {"symbol": "Ru", "a": 3.5}
 
 ## flat
 #surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
 #surf = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=vacuum)
 
 ## stepped - fcc
-surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum, )
+#surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum, )
+surf = fcc211(symbol=elem["symbol"], size=[6, 3, 3], a=elem["a"], vacuum=vacuum, )
 
 ## stepped - non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
@@ -38,10 +40,10 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.3 * natoms)
+max_replace = int(0.2 * natoms)
 #elem2 = ["Rh"]
-#elem2 = ["Pd"]
-elem2 = ["Ru"]
+elem2 = ["Pd"]
+#elem2 = ["Ru"]
 
 outjson = "surf.json"
 
@@ -84,7 +86,7 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0, "optimized": "no"}
 	db.write(surf_copy, data=data)
 	#write("POSCAR", surf_copy)
 	id += 1
