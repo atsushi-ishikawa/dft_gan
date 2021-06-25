@@ -11,7 +11,7 @@ import random
 argvs = sys.argv
 num_data = int(argvs[1])
 
-vacuum = 10.0
+vacuum = 8.0
 
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
@@ -24,7 +24,7 @@ elem = {"symbol": "Ru", "a": 3.5}
 
 ## stepped - fcc
 #surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum, )
-surf = fcc211(symbol=elem["symbol"], size=[6, 3, 3], a=elem["a"], vacuum=vacuum, )
+surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum, )
 
 ## stepped - non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
@@ -40,7 +40,7 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.2 * natoms)
+max_replace = int(0.03* natoms)
 #elem2 = ["Rh"]
 elem2 = ["Pd"]
 #elem2 = ["Ru"]

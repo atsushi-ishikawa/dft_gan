@@ -23,7 +23,9 @@ clean   = False
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
-
+# whether to keep cell shape (i.e. ISIF=4 or 7)
+keep_cell_shape = True
+# whether to check coordinate by view
 check  = False
 
 # workdir to store vasp data
@@ -65,24 +67,25 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 10 # maximum number of geomtry optimization steps
+steps = 100 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	#xc     = "beef-vdw"
-	xc     = "pbe"
+	xc     = "beef-vdw"
+	#xc     = "pbe"
 	ivdw   = 0
 	nsw    = 0  # steps
 	nelm   = 40
+	nelmin = 5
 	ibrion = -1
 	potim  = 0.2
-	algo   = "Fast"  # sometimes VeryFast fails
+	algo   = "VeryFast"  # sometimes VeryFast fails
 	ismear = 1
 	sigma  = 0.2
 	ediff  = 1.0e-4
-	ediffg = ediff * 0.1
+	ediffg = -0.05
 	kpts   = [1, 1, 1]
-	ispin  = 1
+	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
@@ -96,17 +99,20 @@ if "vasp" in calculator:
 	ldipol = True
 	idipol = 3
 
-	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
-					 kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
-	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm,
-					 kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-					 lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
-else:
+	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
+					 nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym,
+					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
+	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
+					 nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym,
+					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
+elif "emt" in calculator:
 	calc_mol  = EMT()
 	calc_surf = EMT()
 	optimize_unitcell = False
-
+else:
+	print("currently VASP or EMT is supported ... quit")
+	sys.exit(1)
+	
 height = 1.4
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
@@ -119,24 +125,18 @@ def set_unitcell_gasphase(Atoms, vacuum=10.0):
 def set_calculator_with_directory(Atoms, calc, directory="."):
 	if "vasp" in calculator:
 		calc.directory = directory
-
 	Atoms.set_calculator(calc)
 
 
-def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False, keep_cell_shape=False):
+def run_optimizer(atoms, steps=100, optimize_unitcell=False, keep_cell_shape=False):
 	calc = atoms.get_calculator()
 
-	if calc.name.lower() == "emt":
-		# EMT
-		opt = BFGS(atoms)
-		opt.run(fmax=fmax, steps=steps)
-		en = atoms.get_potential_energy()
-	elif calc.name.lower() == "vasp":
+	if "vasp" in calculator:
 		# VASP
 		calc.int_params["ibrion"]  = 2
 		calc.int_params["nsw"]     = steps
 		calc.input_params["potim"] = potim
-		calc.exp_params["ediffg"]  = -fmax  # force based
+		calc.exp_params["ediffg"]  = ediffg
 
 		if optimize_unitcell:
 			if keep_cell_shape:
@@ -150,7 +150,7 @@ def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False, keep_cell
 
 				# step2: ionic 
 				calc.int_params["isif"]   = 2
-				calc.exp_params["ediffg"] = -fmax
+				calc.exp_params["ediffg"] = ediffg
 				atoms.set_calculator(calc)
 			else:
 				# ionic + cell
@@ -159,13 +159,15 @@ def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False, keep_cell
 				atoms.set_calculator(calc)
 		else:
 			# ionic
-			calc.int_params["isif"]    =  2
-			calc.int_params["nsw"]     =  steps
-			calc.input_params["potim"] =  potim
-			calc.exp_params["ediffg"]  = -fmax
+			calc.int_params["isif"]    = 2
+			calc.int_params["nsw"]     = steps
+			calc.input_params["potim"] = potim
+			calc.exp_params["ediffg"]  = ediffg
 	else:
-		print("use vasp or emt. now ", calc.name)
-		sys.exit(1)
+		# EMT
+		opt = BFGS(atoms)
+		opt.run(fmax=0.1, steps=steps)
+		en = atoms.get_potential_energy()
 
 	# do calculation
 	en = atoms.get_potential_energy()
@@ -173,7 +175,7 @@ def run_optimizer(atoms, fmax=0.1, steps=100, optimize_unitcell=False, keep_cell
 	#
 	# reset vasp calculator to single point energy's one
 	#
-	if calc.name.lower() == "vasp":
+	if "vasp" in calculator:
 		if do_single_point:
 			calc.int_params["ibrion"]  = -1
 			calc.int_params["nsw"]     =  0
@@ -315,7 +317,7 @@ for irxn in range(rxn_num):
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
-					offset = (0.23, 0.30)  # for stepped
+					offset = (0.22, 0.30)  # for stepped
 				else:
 					offset = (0.50, 0.50)
 
@@ -358,13 +360,13 @@ for irxn in range(rxn_num):
 				if do_single_point:
 					# geometry optimization + single point energy calculation
 					sys.stdout.flush()
-					en, atoms = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell)
+					en, atoms = run_optimizer(atoms, steps=steps, optimize_unitcell=optimize_unitcell)
 					sys.stdout.flush()
 					en = atoms.get_potential_energy() # single point
 				else:
 					# geometry optimization only
 					sys.stdout.flush()
-					en, atoms = run_optimizer(atoms, fmax=0.1, steps=steps, optimize_unitcell=optimize_unitcell, keep_cell_shape=True)
+					en, atoms = run_optimizer(atoms,  steps=steps, optimize_unitcell=optimize_unitcell, keep_cell_shape=keep_cell_shape)
 
 				if savefig and mol_type == "adsorbed":
 					savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
