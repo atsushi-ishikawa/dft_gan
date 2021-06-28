@@ -12,8 +12,8 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 reac_json = args.reac_json
 
-T = 700
-ptot = 100.0e5
+T = 700 # in K
+ptot = 100.0e5  # in Pa
 kJtoeV = 1/98.415
 kB = 8.617*1.0e-5
 
@@ -24,7 +24,6 @@ ads = {"N" : 0, "H":1, "NH": 2, "NH2": 3, "NH3": 4, "vac": 5}
 reactionfile = "nh3.txt"
 rxn_num = get_number_of_reaction(reactionfile)
 
-# pressure in Pa
 p = np.zeros(len(gas))
 conversion = 0.1
 p[gas["N2"]]  = ptot*(1.0/4.0)
@@ -67,7 +66,7 @@ for id in range(num_data):
 		Ea  = tmp[rds]
 
 		RT = 8.314*T*1.0e-3*kJtoeV  # J/K * K
-		A  = 1.0e6
+		A  = 1.2e1 / sqrt(T)  # Dahl J.Catal., converted from bar^-1 to Pa^-1
 		k  = A*np.exp(-Ea/RT)
 
 		# coverage
@@ -86,11 +85,11 @@ for id in range(num_data):
 		
 		Keq     = K[0]*K[1]**3*K[2]**2*K[3]**2*K[4]**2*K[5]**2
 		gamma   = (1/Keq)*(p[gas["NH3"]]**2/(p[gas["N2"]]*p[gas["H2"]]**3))
-		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma)
-		lograte = np.log10(rate)
+		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma) # maybe TOF
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "score": lograte}
-		#data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "score": -1.0*deltaE[0]}
+		score   = rate
+
+		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "score": score}
 
 		# add to json
 		with open(reac_json, "r") as f:

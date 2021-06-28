@@ -23,8 +23,8 @@ elem = {"symbol": "Ru", "a": 3.5}
 #surf = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=vacuum)
 
 ## stepped - fcc
-#surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum, )
-surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum, )
+#surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum)
+surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum)
 
 ## stepped - non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)

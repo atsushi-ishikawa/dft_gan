@@ -18,7 +18,7 @@ import shutil
 import socket
 
 # whether to cleanup working directory for vasp
-clean   = False
+clean = False
 # save figures for structure
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
@@ -26,7 +26,7 @@ do_single_point = False
 # whether to keep cell shape (i.e. ISIF=4 or 7)
 keep_cell_shape = True
 # whether to check coordinate by view
-check  = False
+check = False
 
 # workdir to store vasp data
 #workdir = ""
@@ -55,7 +55,6 @@ collection = g2
 
 # surface information
 nlayer = 4
-#nlayer = 14
 nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
@@ -80,12 +79,12 @@ if "vasp" in calculator:
 	ibrion = -1
 	potim  = 0.2
 	algo   = "VeryFast"  # sometimes VeryFast fails
-	ismear = 1
+	ismear = 0
 	sigma  = 0.2
 	ediff  = 1.0e-4
 	ediffg = -0.05
 	kpts   = [1, 1, 1]
-	ispin  = 2
+	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
@@ -314,6 +313,10 @@ for irxn in range(rxn_num):
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
 					offset = (0.40, 0.50)  # for stepped
+				elif site == "br" or "bridge":
+					#offset = (0.50, 0.50)  # for [2, 2] supercell
+					#offset = (0.33, 0.33)  # for [3, 3] supercell
+					offset = (0.40, 0.30)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
