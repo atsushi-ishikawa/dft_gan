@@ -66,7 +66,7 @@ for id in range(num_data):
 		Ea  = tmp[rds]
 
 		RT = 8.314*T*1.0e-3*kJtoeV  # J/K * K
-		A  = 1.2e1 / sqrt(T)  # Dahl J.Catal., converted from bar^-1 to Pa^-1
+		A  = 1.2e1 / np.sqrt(T)  # Dahl J.Catal., converted from bar^-1 to Pa^-1
 		k  = A*np.exp(-Ea/RT)
 
 		# coverage
