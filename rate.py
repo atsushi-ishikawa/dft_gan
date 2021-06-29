@@ -12,6 +12,8 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 reac_json = args.reac_json
 
+debug = True
+
 T = 700 # in K
 ptot = 100.0e5  # in Pa
 kJtoeV = 1/98.415
@@ -31,17 +33,17 @@ p[gas["H2"]]  = ptot*(3.0/4.0)
 p[gas["NH3"]] = p[gas["N2"]]*conversion
 
 # coverage
-theta  = np.zeros(len(ads))
+theta = np.zeros(len(ads))
 
-# entropy
+# entropy in eV/K
 deltaS    = np.zeros(rxn_num)
 deltaS[0] = -1.0e-3
 deltaS[1] = -1.0e-3
 deltaS[5] =  1.0e-3
 
 # reation energies and equilibrium constant
-df_reac = pd.read_json(reac_json)
-df_reac = df_reac.set_index("unique_id")
+df_reac  = pd.read_json(reac_json)
+df_reac  = df_reac.set_index("unique_id")
 num_data = len(df_reac)
 
 for id in range(num_data):
@@ -53,20 +55,21 @@ for id in range(num_data):
 		deltaE = df_reac.iloc[id].reaction_energy
 		deltaE = np.array(deltaE)
 		deltaG = deltaE - T*deltaS
-		K = np.exp(deltaG)
+		K = np.exp(-deltaG/(kB*T))
 
 		# rate-determining step
 		rds = 0
 
 		# activation energy
-		# Bronsted-Evans-Polanyi
-		alpha = 1.2
-		beta  = 1.0
+		# Bronsted-Evans-Polanyi --- universal a and b for stepped surface (Norskov 2002)
+		alpha = 0.87
+		beta  = 1.34
 		tmp = alpha*deltaE + beta
 		Ea  = tmp[rds]
 
 		RT = 8.314*T*1.0e-3*kJtoeV  # J/K * K
-		A  = 1.2e1 / np.sqrt(T)  # Dahl J.Catal., converted from bar^-1 to Pa^-1
+		#A  = 1.2e1 / np.sqrt(T)  # Dahl J.Catal., converted from bar^-1 to Pa^-1
+		A  = 0.241 # [s^-1] Logadottir, J.Catal 220 273 2003
 		k  = A*np.exp(-Ea/RT)
 
 		# coverage
@@ -103,8 +106,11 @@ for id in range(num_data):
 			with open(reac_json, "w") as f:
 				json.dump(datum, f, indent=4)
 
-		#print("theta[N] = {0:5.3e}, theta[vac] = {1:5.3e}".format(theta[ads["N"]], theta[ads["vac"]]))
-		#print("Ea = {0:5.3f} eV, log(rate) = {1:5.3f}".format(Ea, lograte))
+		if debug:
+			print("K[0]={0:4.2e}, K[1]={1:4.2e}, K[2]={2:4.2e}, K[3]={3:4.2e}, K[4]={4:4.2e}, K[5]={5:4.2e}".format(K[0],K[1],K[2],K[3],K[4],K[5]))
+			print("theta[N]={0:4.2e}, theta[H]={1:4.2e}, theta[NH]={2:4.2e}, theta[NH2]={3:4.2e}, theta[NH3]={4:4.2e}, theta[vac]={5:4.2e}"
+					.format(theta[ads["N"]], theta[ads["H"]], theta[ads["NH"]], theta[ads["NH2"]], theta[ads["NH3"]], theta[ads["vac"]]))
+			print("Ea = {0:5.3f} eV, score = {1:5.3e}".format(Ea, score))
 	else:
 		print("reaction energy not available")
 

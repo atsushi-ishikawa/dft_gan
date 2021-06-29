@@ -66,7 +66,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 100 # maximum number of geomtry optimization steps
+steps = 20 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -84,7 +84,7 @@ if "vasp" in calculator:
 	ediff  = 1.0e-4
 	ediffg = -0.05
 	kpts   = [1, 1, 1]
-	ispin  = 1
+	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
@@ -316,11 +316,11 @@ for irxn in range(rxn_num):
 				elif site == "br" or "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.40, 0.30)  # for stepped
+					offset = (0.40, 0.32)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
-					offset = (0.22, 0.30)  # for stepped
+					offset = (0.22, 0.32)  # for stepped
 				else:
 					offset = (0.50, 0.50)
 
