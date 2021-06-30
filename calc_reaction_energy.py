@@ -23,7 +23,7 @@ clean = False
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
-# whether to keep cell shape (i.e. ISIF=4 or 7)
+# whether to keep cell shape (i.e. ISIF=4 or 7). Note: False leads slow convergence..
 keep_cell_shape = True
 # whether to check coordinate by view
 check = False
@@ -66,7 +66,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 20 # maximum number of geomtry optimization steps
+steps = 200 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -79,11 +79,11 @@ if "vasp" in calculator:
 	ibrion = -1
 	potim  = 0.2
 	algo   = "VeryFast"  # sometimes VeryFast fails
-	ismear = 0
-	sigma  = 0.2
-	ediff  = 1.0e-4
+	ismear = 1
+	sigma  = 0.1
+	ediff  = 1.0e-5
 	ediffg = -0.05
-	kpts   = [1, 1, 1]
+	kpts   = [2, 2, 1]
 	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
@@ -316,7 +316,7 @@ for irxn in range(rxn_num):
 				elif site == "br" or "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.40, 0.32)  # for stepped
+					offset = (0.38, 0.32)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell

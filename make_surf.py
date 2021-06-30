@@ -11,7 +11,7 @@ import random
 argvs = sys.argv
 num_data = int(argvs[1])
 
-vacuum = 8.0
+vacuum = 9.0
 
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
