@@ -313,7 +313,7 @@ for irxn in range(rxn_num):
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
 					offset = (0.40, 0.50)  # for stepped
-				elif site == "br" or "bridge":
+				elif site == "br" or site == "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
 					offset = (0.38, 0.32)  # for stepped
@@ -322,6 +322,8 @@ for irxn in range(rxn_num):
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
 					offset = (0.22, 0.32)  # for stepped
 				else:
+					print("other")
+					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					offset = (0.50, 0.50)
 
 				surf_formula = surf.get_chemical_formula()
