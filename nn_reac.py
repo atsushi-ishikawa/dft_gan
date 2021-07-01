@@ -1,16 +1,16 @@
+from tools import load_ase_json
+from ase.db import connect
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from ase.build import fcc111, fcc211
+from ase.visualize import view
 import glob
 import os
 import pandas as pd
 import torch
 import torch.nn as nn
-from tools import load_ase_json
-from ase.db import connect
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import h5py
 import numpy as np
 import argparse
-from ase.build import fcc111
-from ase.visualize import view
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device is %s" % device)
@@ -330,7 +330,8 @@ def make_atomic_numbers(inputlist, reflist):
 	global scaler_selection
 
 	#elements = ["Ru", "Pt"]
-	elements = ["Ru", "Ni"]
+	#elements = ["Ru", "Ni"]
+	elements = ["Ru", "Pd"]
 
 	AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
 	elements = list(map(lambda x: AN[x], elements))
@@ -378,8 +379,11 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-#surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.5, vacuum=10.0)
-surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.5, vacuum=10.0)
+vacuum = 9.0
+#surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.5, vacuum=vacuum)
+#surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.5, vacuum=vacuum)
+surf = fcc211(symbol="Au", size=[6, 3, 4], a=3.5, vacuum=vacuum)
+
 check = False
 write = True
 db = connect(surf_json, type="json")  # add to existing file
