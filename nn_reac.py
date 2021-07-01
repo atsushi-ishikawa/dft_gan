@@ -391,12 +391,13 @@ db = connect(surf_json, type="json")  # add to existing file
 for sample in samples:
 	surf.set_atomic_numbers(sample)
 	atomic_numbers = surf.get_atomic_numbers()
+	atomic_numbers = list(atomic_numbers)   # make non-numpy
 	formula = surf.get_chemical_formula()
 	surf.pbc = True
 
 	print("formula: ", surf.get_chemical_formula())
 	if check: view(surf)
-	data = {"chemical_formula": formula, "atomic_numbers": list(atomic_numbers), "run": nrun + 1}
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1, "optimized": "no"}
 	#
 	# write candidate to file
 	#
