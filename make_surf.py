@@ -16,7 +16,7 @@ vacuum = 9.0
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
 #elem = {"symbol": "Ni", "a": 3.5}
-elem = {"symbol": "Ru", "a": 3.5}
+elem = {"symbol": "Ru", "a": 2.7}
 
 ## flat
 #surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
@@ -40,7 +40,7 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.03* natoms)
+max_replace = int(0.2* natoms)
 #elem2 = ["Rh"]
 elem2 = ["Pd"]
 #elem2 = ["Ru"]
@@ -86,7 +86,7 @@ for i in range(num_data):
 
 	if check: view(surf_copy)
 
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0, "optimized": "no"}
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
 	#write("POSCAR", surf_copy)
 	id += 1

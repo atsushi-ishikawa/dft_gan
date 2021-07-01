@@ -380,9 +380,10 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 # Make fake examples: need some template -- should be fixed
 #
 vacuum = 9.0
-#surf = fcc111(symbol="Au", size=[2, 2, 5], a=3.5, vacuum=vacuum)
-#surf = fcc111(symbol="Au", size=[3, 3, 4], a=3.5, vacuum=vacuum)
-surf = fcc211(symbol="Au", size=[6, 3, 4], a=3.5, vacuum=vacuum)
+a = 2.7
+#surf = fcc111(symbol="Ru", size=[2, 2, 5], a=a, vacuum=vacuum)
+#surf = fcc111(symbol="Ru", size=[3, 3, 4], a=a, vacuum=vacuum)
+surf = fcc211(symbol="Ru", size=[6, 3, 4], a=a, vacuum=vacuum)
 
 check = False
 write = True
@@ -394,10 +395,11 @@ for sample in samples:
 	atomic_numbers = list(atomic_numbers)   # make non-numpy
 	formula = surf.get_chemical_formula()
 	surf.pbc = True
+	surf.translate([0, 0, -vacuum+1.0])
 
 	print("formula: ", surf.get_chemical_formula())
 	if check: view(surf)
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1, "optimized": "no"}
+	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1}
 	#
 	# write candidate to file
 	#
