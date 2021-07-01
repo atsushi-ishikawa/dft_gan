@@ -4,7 +4,7 @@
 #$ -cwd
 #$ -q all.q
 #$ -pe openmpi24 24
-#$ -l hostname=whisky1?
+#$ -l hostname=whisky[0-2]?
 
 ID=$1
 

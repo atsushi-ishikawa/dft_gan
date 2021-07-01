@@ -1,7 +1,7 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=40
-max_sub=40
+num_data=1
+max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"
 dash_server="mio"

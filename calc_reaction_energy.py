@@ -66,7 +66,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 200 # maximum number of geomtry optimization steps
+steps = 5 # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
@@ -74,7 +74,7 @@ if "vasp" in calculator:
 	#xc     = "pbe"
 	ivdw   = 0
 	nsw    = 0  # steps
-	nelm   = 40
+	nelm   = 10  # 40
 	nelmin = 5
 	ibrion = -1
 	potim  = 0.2
@@ -84,7 +84,7 @@ if "vasp" in calculator:
 	ediff  = 1.0e-5
 	ediffg = -0.05
 	kpts   = [2, 2, 1]
-	ispin  = 2
+	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
 	npar   = 6
@@ -316,13 +316,12 @@ for irxn in range(rxn_num):
 				elif site == "br" or site == "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.38, 0.32)  # for stepped
+					offset = (0.32, 0.32)  # for stepped
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
 					offset = (0.22, 0.32)  # for stepped
 				else:
-					print("other")
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					offset = (0.50, 0.50)
 
@@ -403,6 +402,7 @@ for irxn in range(rxn_num):
 	if abs(dE) > 10.0:
 		print("errorous reaction energy ... quit")
 		sys.exit(1)
+
 	#
 	# done
 	#
