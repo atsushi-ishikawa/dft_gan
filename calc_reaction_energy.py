@@ -66,23 +66,23 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 1 # maximum number of geomtry optimization steps
+steps = 5  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	#xc     = "beef-vdw"
-	xc     = "rpbe"
+	xc     = "beef-vdw"
+	#xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0  # steps
-	nelm   = 30
+	nelm   = 40
 	nelmin = 5
 	ibrion = -1
 	potim  = 0.2
-	algo   = "VeryFast"  # sometimes VeryFast fails
+	algo   = "Fast"  # sometimes VeryFast fails
 	ismear = 1
 	sigma  = 0.1
 	ediff  = 1.0e-5
-	ediffg = -0.05
+	ediffg = -0.1
 	kpts   = [2, 2, 1]
 	ispin  = 1
 	kgamma = True
@@ -112,7 +112,6 @@ else:
 	print("currently VASP or EMT is supported ... quit")
 	sys.exit(1)
 	
-height = 1.4
 
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
 	cell = np.array([1, 1, 1]) * vacuum
@@ -309,21 +308,26 @@ for irxn in range(rxn_num):
 				# adsorbate calculation
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
+				height0 = 1.4
 				if site == "atop":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
 					offset = (0.40, 0.50)  # for stepped
+					height = height0
 				elif site == "br" or site == "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
 					offset = (0.34, 0.32)  # for stepped
+					height = height0 + 0.2
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
 					offset = (0.22, 0.32)  # for stepped
+					height = height0
 				else:
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					offset = (0.50, 0.50)
+					height = height0
 
 				surf_formula = surf.get_chemical_formula()
 				name = surf_formula + "gas" + unique_id
