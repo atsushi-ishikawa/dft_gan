@@ -380,7 +380,7 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 # Make fake examples: need some template -- should be fixed
 #
 vacuum = 9.0
-a = 2.7
+a = 2.7*1.3
 #surf = fcc111(symbol="Ru", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Ru", size=[3, 3, 4], a=a, vacuum=vacuum)
 surf = fcc211(symbol="Ru", size=[6, 3, 4], a=a, vacuum=vacuum)

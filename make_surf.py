@@ -16,7 +16,7 @@ vacuum = 9.0
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
 #elem = {"symbol": "Ni", "a": 3.5}
-elem = {"symbol": "Ru", "a": 2.7}
+elem = {"symbol": "Ru", "a": 2.7*1.3}
 
 ## flat
 #surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
@@ -24,7 +24,7 @@ elem = {"symbol": "Ru", "a": 2.7}
 
 ## stepped - fcc
 #surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum)
-surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"]*1.3, vacuum=vacuum)
+surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum)
 
 ## stepped - non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
