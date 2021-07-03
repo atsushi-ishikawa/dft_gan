@@ -21,7 +21,7 @@ dirname   = os.path.dirname(cwd)
 surf_json = os.path.join(dirname + "/surf.json")
 reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
-eneg_file = os.path.join(dirname + "/diag.h5")
+eneg_file = os.path.join(dirname + "/ped.h5")
 
 interval = 60*(60*1e3)  # in milisec
 height = 320  # height of each figure

@@ -12,7 +12,7 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 reac_json = args.reac_json
 
-debug = True
+debug = False
 
 T = 700 # in K
 ptot = 100.0e5  # in Pa

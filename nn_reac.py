@@ -384,6 +384,8 @@ a = 2.7*1.3
 #surf = fcc111(symbol="Ru", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Ru", size=[3, 3, 4], a=a, vacuum=vacuum)
 surf = fcc211(symbol="Ru", size=[6, 3, 4], a=a, vacuum=vacuum)
+surf.pbc = True
+surf.translate([0, 0, -vacuum+1.0])
 
 check = False
 write = True
@@ -394,8 +396,6 @@ for sample in samples:
 	atomic_numbers = surf.get_atomic_numbers()
 	atomic_numbers = list(atomic_numbers)   # make non-numpy
 	formula = surf.get_chemical_formula()
-	surf.pbc = True
-	surf.translate([0, 0, -vacuum+1.0])
 
 	print("formula: ", surf.get_chemical_formula())
 	if check: view(surf)

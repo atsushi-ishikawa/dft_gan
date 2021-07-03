@@ -7,6 +7,8 @@ from scipy import interpolate
 from tools import find_highest
 import h5py
 
+savefig = True
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", default="")
 parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading rxn. energy and writing rate")
@@ -15,7 +17,7 @@ parser.add_argument("--best", default=True)
 args = parser.parse_args()
 reac_json = args.reac_json
 best = args.best
-eneg_file = "diag.h5"
+eneg_file = "ped.h5"
 
 if best:
 	unique_id = find_highest(json=reac_json, score="score")
@@ -33,19 +35,38 @@ if unique_id in df_reac.index:
 		sys.exit(1)
 
 deltaE = np.array(deltaE)
+ped = np.zeros(1) # 0)
+ped = np.append(ped, ped[-1]+deltaE[0]) # 1)   N2 -> 2N*
+ped = np.append(ped, ped[-1]+deltaE[1]) # 2)  2N* + H2 -> 2N* + 2H*
+ped = np.append(ped, ped[-1]+deltaE[1]) # 3)  2N* + 2H* + H2 -> 2N* + 4H*
+ped = np.append(ped, ped[-1]+deltaE[1]) # 4)  2N* + 4H* + H2 -> 2N* + 6H*
+ped = np.append(ped, ped[-1]+deltaE[2]) # 5)  2N* + 6H* -> N* + 5H* + NH*
+ped = np.append(ped, ped[-1]+deltaE[3]) # 6)   N* + 5H*  + NH*  ->  N* + 4H*  + NH2*
+ped = np.append(ped, ped[-1]+deltaE[4]) # 7)   N* + 4H*  + NH2* ->  N* + 3H*  + NH3*
+ped = np.append(ped, ped[-1]+deltaE[5]) # 8)   N* + 3H*  + NH3* ->  N* + 3H*  + NH3
+ped = np.append(ped, ped[-1]+deltaE[2]) # 9)   N* + 3H*  + NH3  -> 2H* + NH*  + NH3
+ped = np.append(ped, ped[-1]+deltaE[3]) # 10) 2H* + NH*  + NH3  ->  H* + NH2* + NH3
+ped = np.append(ped, ped[-1]+deltaE[4]) # 11)  H* + NH2* + NH3  ->  NH3* + NH3
+ped = np.append(ped, ped[-1]+deltaE[5]) # 12)  NH3* + NH3 -> 2NH3*
+
+points = 500  # resolution
 
 rds = 1
-y1  = deltaE
-y1  = np.insert(y1, 0, 0.0)
-num_rxn = len(y1)+1
-Ea  = y1[rds] + 0.2
-y1  = np.insert(y1, rds, y1[rds-1])
+y1  = ped
+num_rxn = len(y1)
 
+Ea  = y1[rds]*0.87 + 1.34  # BEP note: revise alpha and beta accordingly
+
+# extend x length after TS curve
+y1  = np.insert(y1, rds, y1[rds])
+num_rxn += 1
 
 x1 = np.arange(0, num_rxn)
-x1_latent = np.linspace(0, num_rxn-1, 500)
+x1_latent = np.linspace(0, num_rxn-1, points)
 f1 = interpolate.interp1d(x1, y1, kind="nearest")
-
+#
+# replace RDS by quadratic curve
+#
 x2 = [rds-0.5, rds, rds+0.5]
 x2 = np.array(x2)
 y2 = np.array([y1[rds-1], Ea, y1[rds+1]])
@@ -62,7 +83,7 @@ for i in x1_latent:
 	y = np.append(y, max(val1, val2))
 
 # save h5 file
-h5file = h5py.File(eneg_file,"w")
+h5file = h5py.File(eneg_file, "w")
 h5file.create_dataset("x", (1,), maxshape=(None, ), chunks=True, dtype="float")
 h5file.create_dataset("y", (1,), maxshape=(None, ), chunks=True, dtype="float")
 h5file.close()
@@ -76,7 +97,6 @@ with h5py.File(eneg_file, "a") as f:
 	f["y"][:] = y
 
 # when saving png file
-savefig = False
 if savefig:
 	import matplotlib.pyplot as plt
 	import seaborn as sns
@@ -85,6 +105,6 @@ if savefig:
 	p = sns.lineplot(x=x1_latent, y=y, sizes=(0.5, 1.0))
 	p.set_xlabel("Steps")
 	p.set_ylabel("Energy (eV)")
-	filename = unique_id + "_" + "ene_diag.png"
+	filename = unique_id + "_" + "ped.png"
 	plt.savefig(filename)
 
