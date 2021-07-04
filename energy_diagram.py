@@ -7,7 +7,7 @@ from scipy import interpolate
 from tools import find_highest
 import h5py
 
-savefig = True
+savefig = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", default="")
