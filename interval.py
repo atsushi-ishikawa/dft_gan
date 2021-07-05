@@ -196,17 +196,15 @@ def make_coverage_bar(n, yaxis_type):
 	df = pd.read_json(reac_json)
 	df = df.set_index("unique_id")
 	df = df.sort_values("score", ascending=False)
+	species  = df.iloc[0]["species"]
 	coverage = df.iloc[0]["coverage"]
 
-	x = list(range(len(coverage)))
-	y = coverage
-
 	figure = go.Figure()
-	figure.add_trace(go.Bar(x=x, y=y, marker_color="steelblue"))
-	figure.update_yaxes(type="linear" if yaxis_type=="linear" else "log")
-	figure.update_layout(margin=dict(r=20, t=20, b=20),
+	figure.add_trace(go.Bar(x=species, y=coverage, marker_color="steelblue"))
+	figure.update_yaxes(type="linear" if yaxis_type=="linear" else "log", exponentformat="power")
+	figure.update_layout(margin=dict(r=10, t=10, b=10),
 						 xaxis_title="species", yaxis_title="coverage",
-						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
+						 #legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 height=height)
 	return figure
 

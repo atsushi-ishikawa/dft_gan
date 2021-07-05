@@ -92,7 +92,7 @@ for id in range(num_data):
 
 		score   = np.log10(rate)
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), "score": score}
+		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), "species": list(ads.keys()), "score": score}
 
 		# add to json
 		with open(reac_json, "r") as f:
