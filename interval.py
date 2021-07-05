@@ -49,19 +49,19 @@ app.layout = html.Div(
 		dcc.Graph(id="graph_bar"),
 		html.Div([
 			html.Div([
-				dcc.Graph(id="graph_loss"),
+				dcc.Graph(id="loss"),
 			], className="six columns"),
+
 			html.Div([
 				dcc.Graph(id="energy"),
+			], className="six columns"),
+
+			html.Div([
+				dcc.RadioItems(id="coverage-yaxis", options=[{"label": i, "value": i} for i in ["linear", "log"]], value="linear"),
+				dcc.Graph(id="coverage"),
 			], className="six columns")
+
 		], className="row"),
-#		html.Table([
-#			html.Tr([
-#				html.Td([dcc.Graph(id="graph_loss")]),
-#				#html.Td([dcc.Graph(id="energy")]),
-#				#html.Td([html.Div(id="structure")]),
-#			]),
-#		]),
 	],
 )
 
@@ -155,8 +155,8 @@ def make_score_bar(n):
 		opacity = 0.2 if i==0 else 1.0
 
 		figure.add_trace(go.Bar(x=x, y=y, marker_color=color, opacity=opacity, 
-							   customdata=df_now[["chemical_formula","unique_id"]], 
-							   hovertemplate="%{customdata[0]}<br>%{customdata[1]}",
+							   customdata=df_now[["score", "chemical_formula", "unique_id"]], 
+							   hovertemplate="%{customdata[0]:.3f}<br>%{customdata[1]}<br>%{customdata[2]}",
 							   name="run " + str(i)))
 
 	figure.update_yaxes(range=[minval-0.03*abs(minval), maxval+0.03*abs(maxval)])
@@ -169,7 +169,7 @@ def make_score_bar(n):
 #
 # loss plot
 #
-@app.callback(Output("graph_loss", "figure"),
+@app.callback(Output("loss", "figure"),
              [Input("interval-component", "n_intervals")])
 def make_loss_figure(n):
 	h5file = h5py.File(loss_file, "r")
@@ -186,6 +186,29 @@ def make_loss_figure(n):
 						 height=height)
 	return figure
 
+#
+# coverage
+#
+@app.callback(Output("coverage", "figure"),
+             [Input("interval-component", "n_intervals"), 
+			  Input("coverage-yaxis", "value")])
+def make_coverage_bar(n, yaxis_type):
+	df = pd.read_json(reac_json)
+	df = df.set_index("unique_id")
+	df = df.sort_values("score", ascending=False)
+	coverage = df.iloc[0]["coverage"]
+
+	x = list(range(len(coverage)))
+	y = coverage
+
+	figure = go.Figure()
+	figure.add_trace(go.Bar(x=x, y=y, marker_color="steelblue"))
+	figure.update_yaxes(type="linear" if yaxis_type=="linear" else "log")
+	figure.update_layout(margin=dict(r=20, t=20, b=20),
+						 xaxis_title="species", yaxis_title="coverage",
+						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
+						 height=height)
+	return figure
 
 if __name__ == "__main__":
 	app.run_server()
