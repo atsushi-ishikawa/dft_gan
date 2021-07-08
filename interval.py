@@ -110,7 +110,7 @@ def make_energy_diagram(n):
 
 	figure = go.Figure()
 	figure.add_trace(go.Scatter(x=x, y=y, mode="lines"))
-	figure.update_layout(margin=dict(l=0, r=20, t=20, b=20),
+	figure.update_layout(margin=dict(l=0, r=40, t=20, b=20),
 						 xaxis_title="steps", yaxis_title="Potential energy (eV)",
 						 height=height)
 	return figure
@@ -228,7 +228,7 @@ def make_reaction_energy_bar(n):
 
 	figure = go.Figure()
 	figure.add_trace(go.Bar(x=x, y=deltaE, marker_color="steelblue"))
-	figure.update_layout(margin=dict(l=0, r=20, t=20, b=20),
+	figure.update_layout(margin=dict(l=0, r=40, t=20, b=20),
 						 xaxis_title="steps", yaxis_title="Reaction energy (eV)",
 						 height=height)
 	return figure
