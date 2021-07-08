@@ -53,13 +53,19 @@ app.layout = html.Div(
 			], className="six columns"),
 
 			html.Div([
-				dcc.Graph(id="energy"),
+				dcc.Graph(id="potential_energy_diagram"),
+			], className="six columns"),
+		], className="row"),
+
+		html.Div([
+			html.Div([
+				dcc.RadioItems(id="coverage-yaxis", options=[{"label": i, "value": i} for i in ["linear", "log"]], value="linear", labelStyle={"margin-left": "10px"}, style={"margin-left": "40px"}),
+				dcc.Graph(id="coverage"),
 			], className="six columns"),
 
 			html.Div([
-				dcc.RadioItems(id="coverage-yaxis", options=[{"label": i, "value": i} for i in ["linear", "log"]], value="linear"),
-				dcc.Graph(id="coverage"),
-			], className="six columns")
+				dcc.Graph(id="reaction_energy"),
+			], className="six columns"),
 
 		], className="row"),
 	],
@@ -95,7 +101,7 @@ def getting_status(n):
 #
 # plotting currently best energy diagram
 #
-@app.callback(Output("energy", "figure"),
+@app.callback(Output("potential_energy_diagram", "figure"),
 			 [Input("interval-component", "n_intervals")])
 def make_energy_diagram(n):
 	h5file = h5py.File(eneg_file, "r")
@@ -104,7 +110,7 @@ def make_energy_diagram(n):
 
 	figure = go.Figure()
 	figure.add_trace(go.Scatter(x=x, y=y, mode="lines"))
-	figure.update_layout(margin=dict(r=40, t=20, b=20),
+	figure.update_layout(margin=dict(l=0, r=20, t=20, b=20),
 						 xaxis_title="steps", yaxis_title="Potential energy (eV)",
 						 height=height)
 	return figure
@@ -161,7 +167,7 @@ def make_score_bar(n):
 
 	figure.update_yaxes(range=[minval-0.03*abs(minval), maxval+0.03*abs(maxval)])
 	figure.update_layout(margin=dict(r=20, t=20, b=20),
-						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
+				 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 yaxis_title="score",
 						 height=height)
 	return figure
@@ -180,7 +186,7 @@ def make_loss_figure(n):
 	figure = go.Figure()
 	figure.add_trace(go.Scatter(x=epoch, y=D_loss, mode="lines", name="Discriminator loss"))
 	figure.add_trace(go.Scatter(x=epoch, y=G_loss, mode="lines", name="Generator loss"))
-	figure.update_layout(margin=dict(r=20, t=20, b=20),
+	figure.update_layout(margin=dict(r=10, t=20, b=10),
 						 xaxis_title="epoch", yaxis_title="loss",
 						 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 height=height)
@@ -202,9 +208,28 @@ def make_coverage_bar(n, yaxis_type):
 	figure = go.Figure()
 	figure.add_trace(go.Bar(x=species, y=coverage, marker_color="steelblue"))
 	figure.update_yaxes(type="linear" if yaxis_type=="linear" else "log", exponentformat="power")
-	figure.update_layout(margin=dict(r=10, t=10, b=10),
+	figure.update_layout(margin=dict(r=10, t=20, b=10),
 						 xaxis_title="species", yaxis_title="coverage",
 						 #legend=dict(orientation="h", yanchor="bottom", y=1.02),
+						 height=height)
+	return figure
+
+#
+# reaction energy
+#
+@app.callback(Output("reaction_energy", "figure"),
+             [Input("interval-component", "n_intervals")])
+def make_reaction_energy_bar(n):
+	df = pd.read_json(reac_json)
+	df = df.set_index("unique_id")
+	df = df.sort_values("score", ascending=False)
+	deltaE = df.iloc[0]["reaction_energy"]
+	x  = list(range(len(deltaE)))
+
+	figure = go.Figure()
+	figure.add_trace(go.Bar(x=x, y=deltaE, marker_color="steelblue"))
+	figure.update_layout(margin=dict(l=0, r=20, t=20, b=20),
+						 xaxis_title="steps", yaxis_title="Reaction energy (eV)",
 						 height=height)
 	return figure
 
