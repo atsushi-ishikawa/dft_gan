@@ -12,6 +12,8 @@ import h5py
 import numpy as np
 import argparse
 
+debug = False
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device is %s" % device)
 
@@ -48,6 +50,10 @@ df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 df  = df.sort_values("score", ascending=False)
+
+if debug:
+	print("best score:",  df.iloc[0]["score"])
+	print("worst score:", df.iloc[-1]["score"])
 #
 # droping NaN in atomic numbers and score
 #
@@ -84,7 +90,7 @@ if not os.path.exists(log_dir):
 	os.makedirs(log_dir)
 #
 # divide into groups according to score
-# note: rank in descending order --- highest: nclass-1 and lowest: 0
+# group with highest score = 0, lowest score = nclass-1
 #
 rank = pd.qcut(df["score"], nclass, labels=False)
 df["rank"] = rank
@@ -320,11 +326,11 @@ def gan(num_epoch=100):
 		f["G_loss"][-num_epoch:] = history["G_loss"]
 
 
-def make_atomic_numbers(inputlist, reflist):
+def make_atomic_numbers(inputlist, oldlist):
 	"""
 	Assuming atomic number sequence is transformed to (0,1).
 	:param inputlist
-	:param reflist
+	:param oldlist
 	:return: newlist
 	"""
 	global scaler_selection
@@ -342,12 +348,20 @@ def make_atomic_numbers(inputlist, reflist):
 		inputlist = inputlist.reshape(batch_size, -1)
 
 	lists = inputlist.astype(int).tolist()  # float --> int --> python list
+
+	if debug:
+		print("elements:", elements)
+		print(lists[0])
+
 	if scaler_selection == "minmax":
 		lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], ilist)) for ilist in lists]
 	else:
 		lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], ilist)) for ilist in lists]
 
-	reflist = reflist.values.tolist()
+	if debug:
+		print(lists[0])
+
+	oldlist = oldlist.values.tolist()
 	#
 	# make uniquelist
 	#
@@ -355,9 +369,9 @@ def make_atomic_numbers(inputlist, reflist):
 	for ilist in lists:
 		ilist = list(ilist)
 		# if i not in newlist:
-		if ilist not in reflist:
+		if ilist not in oldlist:
 			newlist.append(ilist)
-			reflist.append(ilist)
+			oldlist.append(ilist)
 
 	return newlist
 
@@ -369,21 +383,21 @@ gan(num_epoch=num_epoch)
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
 #
-target_class = nclass-1
+#target_class = nclass-1
+target_class = 0
 fakesystem = []
 for target in range(nclass):
 	fakesystem.append(generate(G, target=target))
 
-print(fakesystem[target_class][0].astype(int).reshape(1, -1))
 samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
 vacuum = 9.0
 a = 2.7*1.3
-#surf = fcc111(symbol="Ru", size=[2, 2, 5], a=a, vacuum=vacuum)
-#surf = fcc111(symbol="Ru", size=[3, 3, 4], a=a, vacuum=vacuum)
-surf = fcc211(symbol="Ru", size=[6, 3, 4], a=a, vacuum=vacuum)
+#surf = fcc111(symbol="Au", size=[2, 2, 5], a=a, vacuum=vacuum)
+#surf = fcc111(symbol="Au", size=[3, 3, 4], a=a, vacuum=vacuum)
+surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
 surf.pbc = True
 surf.translate([0, 0, -vacuum+1.0])
 
