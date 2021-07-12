@@ -30,7 +30,7 @@ check = False
 
 # workdir to store vasp data
 #workdir = ""
-workdir = "/work/a_ishi/"
+workdir = "/home/a_ishi/ase/nn_reac/work/"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", help="id for surface system")
@@ -87,7 +87,7 @@ if "vasp" in calculator:
 	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 6
+	npar   = 4
 	nsim   = npar
 	isym   = 0
 	lreal  = True
