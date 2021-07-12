@@ -13,7 +13,7 @@ use_queue=true
 
 # ---------------------------------------------------------------
 host=`hostname`
-if [ $host == "whisky" ]; then
+if test $host == "whisky" -o $host == "vodka"; then
 	stat=qstat
 	sub=qsub
 else
