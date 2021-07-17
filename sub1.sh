@@ -9,7 +9,7 @@ dash_server="mio"
 dir=${HOME}/ase/nn_reac
 submit_shell=run_reaction_energy.sh
 delete_unfinished=true
-use_queue=false
+use_queue=true
 
 # ---------------------------------------------------------------
 host=`hostname`

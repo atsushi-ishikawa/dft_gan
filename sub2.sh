@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cpu_team="mio02" # "vodka" # "whisky"
+cpu_team="vodka" # ("whisky | "vodka" | "mio" | "mio02")
 dir=${HOME}/ase/nn_reac/
 host=`hostname`
 
@@ -9,8 +9,8 @@ if [ $host != $cpu_team ]; then
 	echo "downloading json files from $cpu_team:$dir"
 	scp $cpu_team:$dir/{surf,reaction_energy}.json ./
 fi
-#cp surf.json surf.json.bk
-#cp reaction_energy.json reaction_energy.json.bk
+cp surf.json surf.json.bk
+cp reaction_energy.json reaction_energy.json.bk
 
 python rate.py
 python energy_diagram.py
