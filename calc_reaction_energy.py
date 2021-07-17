@@ -87,7 +87,8 @@ if "vasp" in calculator:
 	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	npar   = 4
+	#npar   = 4
+	npar   = 16
 	nsim   = npar
 	isym   = 0
 	lreal  = True
