@@ -12,8 +12,6 @@ import h5py
 import numpy as np
 import argparse
 
-debug = False
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device is %s" % device)
 
@@ -51,9 +49,8 @@ df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 df  = df.sort_values("score", ascending=False)
 
-if debug:
-	print("best score:",  df.iloc[0]["score"])
-	print("worst score:", df.iloc[-1]["score"])
+print("best score:",  df.iloc[0]["score"])
+print("worst score:", df.iloc[-1]["score"])
 #
 # droping NaN in atomic numbers and score
 #
@@ -64,9 +61,9 @@ numdata = len(df)
 # parameters
 #
 numuse     = int(numdata * 1.0)
-nclass     = 10  # 3 --- uniform distribution.  15,20 --- not good atomic numbers
-num_epoch  = 1000 # 1000 seems better than 500
-printnum   = 50
+nclass     = 5 # 5 is better than 10
+num_epoch  = 2000 # 2000 is better than 1000
+printnum   = 200
 batch_size = numdata//5  # from experience
 z_dim = 100
 lr = 1.0e-3
@@ -90,11 +87,13 @@ if not os.path.exists(log_dir):
 	os.makedirs(log_dir)
 #
 # divide into groups according to score
-# group with highest score = 0, lowest score = nclass-1
+# group with highest score = nclass-1, lowest score = 0
 #
 rank = pd.qcut(df["score"], nclass, labels=False)
 df["rank"] = rank
 
+print(df[df["rank"]==nclass-1])
+print(df[df["rank"]==0])
 
 def make_dataloader(x=None, y=None, batch_size=10):
 	import numpy as np
@@ -337,7 +336,8 @@ def make_atomic_numbers(inputlist, oldlist):
 
 	#elements = ["Ru", "Pt"]
 	#elements = ["Ru", "Ni"]
-	elements = ["Ru", "Pd"]
+	#elements = ["Ru", "Pd"]
+	elements = ["Pd", "Pt"]
 
 	AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
 	elements = list(map(lambda x: AN[x], elements))
@@ -349,17 +349,10 @@ def make_atomic_numbers(inputlist, oldlist):
 
 	lists = inputlist.astype(int).tolist()  # float --> int --> python list
 
-	if debug:
-		print("elements:", elements)
-		print(lists[0])
-
 	if scaler_selection == "minmax":
 		lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], ilist)) for ilist in lists]
 	else:
 		lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], ilist)) for ilist in lists]
-
-	if debug:
-		print(lists[0])
 
 	oldlist = oldlist.values.tolist()
 	#
@@ -382,19 +375,22 @@ gan(num_epoch=num_epoch)
 #
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
-#
-#target_class = nclass-1
-target_class = 0
+
 fakesystem = []
 for target in range(nclass):
 	fakesystem.append(generate(G, target=target))
+
+target_class = nclass-1
+#target_class = 0
 
 samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
 vacuum = 9.0
-a = 2.7*1.3
+#a = 2.7*1.3
+a = 3.9  # note: use same a with make_surf.py
+
 #surf = fcc111(symbol="Au", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Au", size=[3, 3, 4], a=a, vacuum=vacuum)
 surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
@@ -419,3 +415,4 @@ for sample in samples:
 	#
 	if write:
 		db.write(surf, data=data)
+

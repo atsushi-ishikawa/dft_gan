@@ -1,7 +1,7 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=1
-max_sub=1
+num_data=60
+max_sub=60
 todolist="todolist.txt"
 tmpdb="tmp.db"
 dash_server="mio"
@@ -9,7 +9,7 @@ dash_server="mio"
 dir=${HOME}/ase/nn_reac
 submit_shell=run_reaction_energy.sh
 delete_unfinished=true
-use_queue=true
+use_queue=false
 
 # ---------------------------------------------------------------
 host=`hostname`
@@ -23,7 +23,7 @@ fi
 #
 # --- delete unfinished jobs ---
 #
-if $delete_unfinished; then
+if $delete_unfinished && $use_queue; then
 	$stat > tmp$$.txt
 	grep $submit_shell tmp$$.txt | awk '{print $1}' | xargs echo
 	rm tmp$$.txt 
@@ -49,8 +49,8 @@ fi
 #
 # --- start calculation ---
 #
-
 # remove trash from previous run
+#
 rm stdout* stderr* 2> /dev/null
 rm $submit_shell*.{e,o}[0-9]* 2> /dev/null
 rm $tmpdb 2> /dev/null

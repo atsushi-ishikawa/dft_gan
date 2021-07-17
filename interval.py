@@ -224,7 +224,8 @@ def make_reaction_energy_bar(n):
 	df = df.set_index("unique_id")
 	df = df.sort_values("score", ascending=False)
 	deltaE = df.iloc[0]["reaction_energy"]
-	x  = list(range(len(deltaE)))
+	x = list(range(len(deltaE)))
+	x = ["N form", "H form", "NH form", "NH2 form", "NH3 form", "NH3 desorp"] 
 
 	figure = go.Figure()
 	figure.add_trace(go.Bar(x=x, y=deltaE, marker_color="steelblue"))

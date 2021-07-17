@@ -14,9 +14,9 @@ num_data = int(argvs[1])
 vacuum = 9.0
 
 # lattice constant
-#elem = {"symbol": "Pt", "a": 3.9}
+elem = {"symbol": "Pt", "a": 3.9}
 #elem = {"symbol": "Ni", "a": 3.5}
-elem = {"symbol": "Ru", "a": 2.7*1.3}
+#elem = {"symbol": "Ru", "a": 2.7*1.3}
 
 ## flat
 #surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
@@ -40,7 +40,8 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(0.2* natoms)
+max_replace = int(1.0* natoms)
+
 #elem2 = ["Rh"]
 elem2 = ["Pd"]
 #elem2 = ["Ru"]
