@@ -28,6 +28,8 @@ keep_cell_shape = True
 # whether to check coordinate by view
 check = False
 
+optimize_unitcell = False
+
 # workdir to store vasp data
 #workdir = ""
 workdir = "/home/a_ishi/ase/nn_reac/work/"
@@ -66,24 +68,26 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 30  # maximum number of geomtry optimization steps
+steps = 100  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
+	encut  = 300
 	#xc     = "beef-vdw"
 	xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0  # steps
-	nelm   = 40
-	nelmin = 5
+	nelm   = 30
+	nelmin = 3
 	ibrion = -1
-	potim  = 0.2
-	algo   = "Fast"  # sometimes VeryFast fails
-	ismear = 1
+	potim  = 0.3
+	algo   = "VeryFast"  # sometimes VeryFast fails
+	ismear = 0
 	sigma  = 0.1
-	ediff  = 1.0e-5
-	ediffg = -0.1
-	kpts   = [2, 2, 1]
+	ediff  = 1.0e-4
+	ediffg = -0.3
+	#kpts   = [2, 2, 1]
+	kpts   = [1, 1, 1]
 	ispin  = 1
 	kgamma = True
 	pp     = "potpaw_PBE.54"
@@ -99,10 +103,10 @@ if "vasp" in calculator:
 	ldipol = True
 	idipol = 3
 
-	calc_mol  = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
+	calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
 					 nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym,
 					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
-	calc_surf = Vasp(prec=prec, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
+	calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
 					 nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym,
 					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
 elif "emt" in calculator:
@@ -294,7 +298,7 @@ for irxn in range(rxn_num):
 				set_unitcell_gasphase(atoms)
 				atoms.center()
 				calc = calc_mol
-				optimize_unitcell = False
+				#optimize_unitcell = False
 
 			elif mol_type == "surf":
 				# bare surface
@@ -303,13 +307,13 @@ for irxn in range(rxn_num):
 				atoms = fix_lower_surface(atoms, nlayer, nrelax)
 				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc = calc_surf
-				optimize_unitcell = True
+				#optimize_unitcell = True
  
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
 				chem = collection[mol[0]]
 				chem.rotate(180, "y")
-				height0 = 1.4
+				height0 = 1.3
 				if site == "atop":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
@@ -340,7 +344,7 @@ for irxn in range(rxn_num):
 				add_adsorbate(atoms, chem, offset=offset, height=height)
 				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc  = calc_surf
-				optimize_unitcell = False
+				#optimize_unitcell = False
 			else:
 				print("something wrong in determining mol_type")
 				sys.exit(1)
@@ -404,7 +408,7 @@ for irxn in range(rxn_num):
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
 
-	if abs(dE) > 10.0:
+	if abs(dE) > 50.0:
 		print("errorous reaction energy ... quit")
 		sys.exit(1)
 

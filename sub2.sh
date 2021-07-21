@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cpu_team="vodka" # ("whisky | "vodka" | "mio" | "mio02")
+cpu_team="whisky" # ("whisky | "vodka" | "mio" | "mio02")
 dir=${HOME}/ase/nn_reac/
 host=`hostname`
 
