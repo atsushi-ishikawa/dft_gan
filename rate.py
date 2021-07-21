@@ -14,7 +14,7 @@ reac_json = args.reac_json
 
 debug = False
 
-T = 1200 # in K
+T = 1000 # in K
 ptot = 100.0e5  # in Pa
 kJtoeV = 1/98.415
 kB = 8.617*1.0e-5
@@ -90,8 +90,9 @@ for id in range(num_data):
 		gamma   = (1/Keq)*(p[gas["NH3"]]**2/(p[gas["N2"]]*p[gas["H2"]]**3))
 		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**1*(1-gamma) # maybe TOF
 
-		score   = np.log10(rate)
-		#score   = -deltaE[0]
+		#score   = np.log10(rate)
+		#score   = -deltaE[0] + deltaE[1]
+		score   = -deltaE[0]
 
 		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), "species": list(ads.keys()), "score": score}
 
