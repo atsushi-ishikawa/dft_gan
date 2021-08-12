@@ -90,9 +90,7 @@ for id in range(num_data):
 		gamma   = (1/Keq)*(p[gas["NH3"]]**2/(p[gas["N2"]]*p[gas["H2"]]**3))
 		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**1*(1-gamma) # maybe TOF
 
-		#score   = np.log10(rate)
-		#score   = -deltaE[0] + deltaE[1]
-		score   = -deltaE[0]
+		score   = np.log10(rate)
 
 		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), "species": list(ads.keys()), "score": score}
 
