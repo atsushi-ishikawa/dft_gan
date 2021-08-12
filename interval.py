@@ -147,6 +147,9 @@ def make_score_bar(n):
 	maxval = df["score"].max()
 	minval = df["score"].min()
 
+	if abs(maxval) < 1.0:
+		maxval = 2.0
+
 	df = df.sort_values("score", ascending=False)
 	df = df.reset_index()
 
@@ -165,7 +168,8 @@ def make_score_bar(n):
 							   hovertemplate="%{customdata[0]:.3f}<br>%{customdata[1]}<br>%{customdata[2]}",
 							   name="run " + str(i)))
 
-	figure.update_yaxes(range=[minval-0.03*abs(minval), maxval+0.03*abs(maxval)])
+	#figure.update_yaxes(range=[minval-0.05*abs(minval), maxval+0.03*abs(maxval)])
+	figure.update_yaxes(range=[minval-0.05*abs(minval), maxval])
 	figure.update_layout(margin=dict(r=20, t=20, b=20),
 				 legend=dict(orientation="h", yanchor="bottom", y=1.02),
 						 yaxis_title="score",
