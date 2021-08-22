@@ -23,16 +23,16 @@ clean = False
 savefig = False
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
-# whether to keep cell shape (i.e. ISIF=4 or 7). Note: False leads slow convergence..
-keep_cell_shape = True
+# whether to keep cell shape (i.e. ISIF=4 or 7)
+keep_cell_shape = True  # False...gives erronous reaction energy
 # whether to check coordinate by view
 check = False
 
-optimize_unitcell = False
+optimize_unitcell = True
 
 # workdir to store vasp data
-#workdir = ""
-workdir = "/home/a_ishi/ase/nn_reac/work/"
+workdir = "/work/a_ishi/"
+#workdir = "/home/a_ishi/ase/nn_reac/work/"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", help="id for surface system")
@@ -55,9 +55,6 @@ tmpdb = connect(tmpdbfile)
 # molecule collection from ase
 collection = g2
 
-# surface information
-nlayer = 4
-nrelax = nlayer // 2
 
 if not os.path.isfile(reac_json):
 	# reac_json does not exist -- make
@@ -68,35 +65,33 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 100  # maximum number of geomtry optimization steps
+steps = 10  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
-	encut  = 300
+	encut  = 400
 	#xc     = "beef-vdw"
 	xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0  # steps
-	nelm   = 30
+	nelm   = 10 # 30
 	nelmin = 3
 	ibrion = -1
-	potim  = 0.3
-	algo   = "VeryFast"  # sometimes VeryFast fails
+	potim  = 0.2
+	algo   = "Fast"  # sometimes VeryFast fails
 	ismear = 0
-	sigma  = 0.1
+	sigma  = 0.1 # 0.2...better?
 	ediff  = 1.0e-4
-	ediffg = -0.3
-	#kpts   = [2, 2, 1]
+	ediffg = -0.1
 	kpts   = [1, 1, 1]
-	ispin  = 1
+	ispin  = 2
 	kgamma = True
 	pp     = "potpaw_PBE.54"
-	#npar   = 4
-	npar   = 16
+	npar   = 6
 	nsim   = npar
 	isym   = 0
-	lreal  = True
-	lorbit = 10  # to avoid error
+	lreal  = True  # False...reaction energy too low
+	lorbit = 10    # to avoid error
 	lwave  = True if do_single_point else False
 	lcharg = True if do_single_point else False
 
@@ -254,7 +249,8 @@ if unique_id in df_reac.index:
 	elif df_reac.loc[unique_id]["status"] == "doing":
 		print("somebody is doing")
 		sys.exit(0)
- 
+
+
 # no one is doing this system ... calculate here
 #with open(reac_json, "r") as f:
 #	datum = json.load(f)
@@ -284,67 +280,68 @@ for irxn in range(rxn_num):
 		E = 0.0
 		for imol, mol in enumerate(mols):
 			if mol[0] == "surf":
-				chem = mol[0]
+				molecule = mol[0]
 			else:
-				chem = collection[mol[0]]
+				molecule = collection[mol[0]]
 
 			site = sites[imol][0]
-			mol_type = get_mol_type(chem, site)
+			mol_type = get_mol_type(molecule, site)
 
 			if mol_type == "gaseous":
 				# gas-phase species
-				atoms = Atoms(chem)
-				if check: view(atoms)
+				atoms = Atoms(molecule)
 				set_unitcell_gasphase(atoms)
 				atoms.center()
+				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc = calc_mol
-				#optimize_unitcell = False
+				if check: view(atoms)
 
 			elif mol_type == "surf":
 				# bare surface
 				atoms = surf.copy()
-				if check: view(atoms)
-				atoms = fix_lower_surface(atoms, nlayer, nrelax)
+				atoms = fix_lower_surface(atoms)
 				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc = calc_surf
-				#optimize_unitcell = True
+				if check: view(atoms)
  
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
-				chem = collection[mol[0]]
-				chem.rotate(180, "y")
-				height0 = 1.3
+				adsorbate = collection[mol[0]]
+				adsorbate.rotate(180, "y")
+				height0 = 1.5  # 1.3
 				if site == "atop":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.40, 0.50)  # for stepped
+					#offset = (0.40, 0.50)  # for stepped fcc
+					offset = (0.37, 0.44)  # for stepped hcp
 					height = height0
 				elif site == "br" or site == "bridge":
 					#offset = (0.50, 0.50)  # for [2, 2] supercell
 					#offset = (0.33, 0.33)  # for [3, 3] supercell
-					offset = (0.34, 0.32)  # for stepped
+					#offset = (0.34, 0.32)  # for stepped fcc
+					offset = (0.50, 0.50)  # for stepped hcp
 					height = height0 + 0.2
 				elif site == "fcc":
 					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					#offset = (0.20, 0.20)  # for [3, 3] supercell
-					offset = (0.22, 0.32)  # for stepped
+					#offset = (0.22, 0.32)  # for stepped fcc
+					offset = (0.50, 0.57)  # for stepped hcp...x and y cannot be rotated
 					height = height0
 				else:
-					#offset = (0.33, 0.33)  # for [2, 2] supercell
 					offset = (0.50, 0.50)
 					height = height0
 
 				surf_formula = surf.get_chemical_formula()
-				name = surf_formula + "gas" + unique_id
+				name  = surf_formula + "gas" + unique_id
 				past  = tmpdb.get(name=name)
 				surf  = tmpdb.get_atoms(id=past.id)
-				atoms = surf
+				atoms = surf.copy()
 
-				atoms = fix_lower_surface(atoms, nlayer, nrelax)
-				add_adsorbate(atoms, chem, offset=offset, height=height)
+				#atoms = fix_lower_surface(atoms)
+				add_adsorbate(atoms, adsorbate, offset=offset, height=height)
 				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
 				calc  = calc_surf
-				#optimize_unitcell = False
+				optimize_unitcell = False
 			else:
 				print("something wrong in determining mol_type")
 				sys.exit(1)
@@ -419,5 +416,4 @@ if check: view(surf)
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
-
 

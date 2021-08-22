@@ -1,8 +1,9 @@
-from ase.build import fcc111, fcc211, bulk, surface
+from ase.build import fcc111, fcc211, hcp0001, bulk, surface
 from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.io import read, write
+from tools import make_step, mirror_invert
 import numpy as np
 import os
 import sys
@@ -11,30 +12,37 @@ import random
 argvs = sys.argv
 num_data = int(argvs[1])
 
-vacuum = 9.0
+check = False  # check structure or not
+
+vacuum = 7.0
 
 # lattice constant
-elem = {"symbol": "Pt", "a": 3.9}
+#elem = {"symbol": "Pt", "a": 3.9}
 #elem = {"symbol": "Ni", "a": 3.5}
-#elem = {"symbol": "Ru", "a": 2.7*1.3}
+#elem = {"symbol": "Ru", "a": 2.7*1.4}
+elem = {"symbol": "Ru", "a": 2.7}
 
-## flat
+## flat fcc
 #surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
 #surf = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=vacuum)
 
-## stepped - fcc
-#surf = fcc211(symbol=elem["symbol"], size=[6, 4, 4], a=elem["a"], vacuum=vacuum)
-surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum)
+## stepped fcc
+#surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum)
 
-## stepped - non fcc
+## stepped hcp
+nlayer = 4
+surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vacuum, orthogonal=True, periodic=True)
+surf = make_step(surf)
+
+## stepped non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
-#surf = surface(bulk, indices=[5,1,1], layers=9, vacuum=vacuum)
-#surf = surf*[1,2,1]
+#bulk = bulk(elem["symbol"], "hcp", a=elem["a"], cubic=False, orthorhombic=True)
+#surf = surface(bulk, indices=[1,1,1], layers=9, vacuum=vacuum)
+#surf = surf*[3,3,1]
 
-surf.pbc = True
+#surf.pbc = True
 surf.translate([0, 0, -vacuum+1.0])
 
-check = False # check structure or not
 calc  = EMT()
 #
 # replace atoms by some element in the list
@@ -42,8 +50,8 @@ calc  = EMT()
 natoms = len(surf.get_atomic_numbers())
 max_replace = int(1.0* natoms)
 
-#elem2 = ["Rh"]
-elem2 = ["Pd"]
+elem2 = ["Rh"]
+#elem2 = ["Pd"]
 #elem2 = ["Ru"]
 
 outjson = "surf.json"
@@ -51,7 +59,6 @@ outjson = "surf.json"
 # remove old one
 if os.path.exists(outjson):
 	os.remove(outjson)
-
 
 db = connect(outjson)
 #

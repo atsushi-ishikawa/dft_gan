@@ -12,6 +12,7 @@ def ABcoord(mol,A,B):
 
 	return R_AB,coordinatingB
 
+
 def run_packmol(xyz_file, a, num, outfile):
 	import os
 
@@ -39,6 +40,7 @@ def run_packmol(xyz_file, a, num, outfile):
 	os.system(run_string)
 
 	# os.system("rm pack_tmp.inp")
+
 
 def json_to_csv(jsonfile, csvfile):
 	import json
@@ -72,6 +74,7 @@ def json_to_csv(jsonfile, csvfile):
 
 	ddd.to_csv(csvfile)
 
+
 def load_ase_json(jsonfile):
 	import json
 	import pandas as pd
@@ -103,6 +106,7 @@ def load_ase_json(jsonfile):
 
 	return ddd
 
+
 def delete_num_from_json(num,jsonfile):
 	from ase.db import connect
 	import sys
@@ -111,51 +115,110 @@ def delete_num_from_json(num,jsonfile):
 	id = db.get(num=num).id
 	db.delete([id])
 
-def sort_atoms_by_z(atoms):
-    from ase import Atoms, Atom
-    import numpy as np
-    #
-    # keep information for original Atoms
-    #
-    tags = atoms.get_tags()
-    pbc  = atoms.get_pbc()
-    cell = atoms.get_cell()
-    dtype = [("idx",int), ("z",float)]
-    zlist = np.array([], dtype=dtype)
 
-    for idx, atom in enumerate(atoms):
-        tmp = np.array([(idx,atom.z)],dtype=dtype)
-        zlist = np.append(zlist, tmp)
+def sort_atoms_by(atoms, xyz="x"):
+	from ase import Atoms, Atom
+	import numpy as np
+	#
+	# keep information for original Atoms
+	#
+	tags = atoms.get_tags()
+	pbc  = atoms.get_pbc()
+	cell = atoms.get_cell()
+	dtype = [("idx", int), (xyz, float)]
+	list = np.array([], dtype=dtype)
 
-    zlist = np.sort(zlist, order="z")
 
-    newatoms = Atoms()
-    for i in zlist:
-        idx = i[0]
-        newatoms.append(atoms[idx])
-    #
-    # restore
-    #
-    newatoms.set_tags(tags)
-    newatoms.set_pbc(pbc)
-    newatoms.set_cell(cell)
+	for idx, atom in enumerate(atoms):
+		if xyz == "x":
+			tmp = np.array([(idx, atom.x)], dtype=dtype)
+		elif xyz == "y":
+			tmp = np.array([(idx, atom.y)], dtype=dtype)
+		else:
+			tmp = np.array([(idx, atom.z)], dtype=dtype)
 
-    return newatoms
+		list = np.append(list, tmp)
 
-def fix_lower_surface(atoms, nlayer, nrelax):
-    import numpy as np
-    from ase.constraints import FixAtoms
+	list = np.sort(list, order=xyz)
 
-    newatoms = sort_atoms_by_z(atoms)
-    natoms   = len(newatoms.get_atomic_numbers())
-    one_surf = natoms // nlayer
-    tag = np.ones(natoms, int)
-    for i in range(natoms-1, natoms-nrelax*one_surf-1, -1):
-        tag[i] = 0
-    newatoms.set_tags(tag)
-    c = FixAtoms(indices=[atom.index for atom in newatoms if atom.tag == 1])
-    newatoms.set_constraint(c)
-    return newatoms
+	newatoms = Atoms()
+	for i in list:
+		idx = i[0]
+		newatoms.append(atoms[idx])
+
+	# restore
+	newatoms.set_tags(tags)
+	newatoms.set_pbc(pbc)
+	newatoms.set_cell(cell)
+
+	return newatoms
+
+
+#def fix_lower_surface(atoms, nlayer, nrelax):
+#    import numpy as np
+#    from ase.constraints import FixAtoms
+#
+#    newatoms = sort_atoms_by_z(atoms)
+#    natoms   = len(newatoms.get_atomic_numbers())
+#    one_surf = natoms // nlayer
+#    tag = np.ones(natoms, int)
+#    for i in range(natoms-1, natoms-nrelax*one_surf-1, -1):
+#        tag[i] = 0
+#    newatoms.set_tags(tag)
+#    c = FixAtoms(indices=[atom.index for atom in newatoms if atom.tag == 1])
+#    newatoms.set_constraint(c)
+#    return newatoms
+
+
+def get_number_of_layers(atoms):
+	import numpy as np
+
+	pos    = atoms.positions
+	zpos   = np.round(pos[:,2], decimals=5)
+	nlayer = len(list(set(zpos)))
+
+	return nlayer
+
+
+def set_tags_by_z(atoms):
+	import numpy as np
+	import pandas as pd
+
+	newatoms = atoms.copy()
+	pos   = newatoms.positions
+	zpos  = np.round(pos[:,2], decimals=1)
+	bins  = list(set(zpos))
+	bins  = np.array(bins) + 1.0e-2
+	bins  = np.insert(bins,0,0)
+
+	labels = []
+	for i in range(len(bins)-1):
+		labels.append(i)
+
+	tags = pd.cut(zpos, bins=bins, labels=labels).to_list()
+	newatoms.set_tags(tags)
+	
+	return newatoms
+
+
+def fix_lower_surface(atoms):
+	import numpy as np
+	import pandas as pd
+	from ase.constraints import FixAtoms
+
+	newatoms = atoms.copy()
+
+	# set tags
+	newatoms = set_tags_by_z(newatoms)
+	tags  = newatoms.get_tags()
+
+	# constraint
+	nlayer = get_number_of_layers(newatoms)
+	lower  = list(range(nlayer // 2))
+	c = FixAtoms(indices=[iatom.index for iatom in newatoms if iatom.tag in lower])
+	newatoms.set_constraint(c)
+
+	return newatoms
 
 
 def find_highest(json, score):
@@ -169,3 +232,47 @@ def find_highest(json, score):
 	best = df.iloc[0].name
 
 	return best
+
+
+def make_step(atoms):
+	import numpy as np
+	from ase.build import rotate
+
+	newatoms = atoms.copy()
+	newatoms = sort_atoms_by(newatoms, xyz="z")
+
+	nlayer    = get_number_of_layers(newatoms)
+	perlayer  = len(newatoms) // nlayer
+	toplayer  = newatoms[-perlayer:]
+	top_layer = sort_atoms_by(toplayer, xyz="y")
+
+	# first remove top layer then add sorted top layer
+	del newatoms[-perlayer:]
+	newatoms += top_layer
+
+	remove = perlayer // 2
+
+	nstart = perlayer*(nlayer-1)  # index for the atom starting the top layer
+	del newatoms[nstart:nstart+remove]
+
+	return newatoms
+
+
+def mirror_invert(atoms):
+	import numpy as np
+
+	pos  = atoms.get_positions()
+	cell = atoms.cell
+
+	# set position
+	pos[:,0] = -pos[:,0]
+	atoms.set_positions(pos)
+
+	# set cell
+	cell = [[-cell[i][0], cell[i][1], cell[i][2]] for i in range(3)]
+	cell = np.array(cell)
+	cell = np.round(cell + 1.0e-5, decimals=4)
+	atoms.set_cell(cell)
+
+	return atoms
+
