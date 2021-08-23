@@ -337,7 +337,8 @@ def make_atomic_numbers(inputlist, oldlist):
 	#elements = ["Ru", "Pt"]
 	#elements = ["Ru", "Ni"]
 	#elements = ["Ru", "Pd"]
-	elements = ["Pd", "Pt"]
+	elements = ["Ru", "Rh"]
+	#elements = ["Pd", "Pt"]
 
 	AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
 	elements = list(map(lambda x: AN[x], elements))
@@ -387,7 +388,7 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
-vacuum = 9.0
+vacuum = 7.0
 a = 2.7  # note: use same a with make_surf.py
 nlayer = 4
 

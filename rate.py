@@ -14,7 +14,7 @@ reac_json = args.reac_json
 
 debug = False
 
-T = 1000 # in K
+T = 700 # in K
 ptot = 100.0e5  # in Pa
 kJtoeV = 1/98.415
 kB = 8.617*1.0e-5

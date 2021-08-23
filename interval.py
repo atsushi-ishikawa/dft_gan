@@ -149,6 +149,8 @@ def make_score_bar(n):
 
 	if abs(maxval) < 1.0:
 		maxval = 2.0
+	elif maxval < 0.0:
+		maxval = 0.0
 
 	df = df.sort_values("score", ascending=False)
 	df = df.reset_index()
