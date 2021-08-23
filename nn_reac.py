@@ -1,7 +1,7 @@
 from tools import load_ase_json
 from ase.db import connect
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from ase.build import fcc111, fcc211
+from ase.build import fcc111, fcc211, hcp0001
 from ase.visualize import view
 import glob
 import os
@@ -388,13 +388,17 @@ samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 # Make fake examples: need some template -- should be fixed
 #
 vacuum = 9.0
-#a = 2.7*1.3
-a = 3.9  # note: use same a with make_surf.py
+a = 2.7  # note: use same a with make_surf.py
+nlayer = 4
 
 #surf = fcc111(symbol="Au", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Au", size=[3, 3, 4], a=a, vacuum=vacuum)
-surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
-surf.pbc = True
+#surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
+## stepped hcp
+surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vacuum, orthogonal=True, periodic=True)
+surf = make_step(surf)
+
+#surf.pbc = True
 surf.translate([0, 0, -vacuum+1.0])
 
 check = False
