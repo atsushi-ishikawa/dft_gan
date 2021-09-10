@@ -1,4 +1,4 @@
-from tools import load_ase_json
+from tools import load_ase_json, make_step
 from ase.db import connect
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from ase.build import fcc111, fcc211, hcp0001
@@ -395,8 +395,7 @@ nlayer = 4
 #surf = fcc111(symbol="Au", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Au", size=[3, 3, 4], a=a, vacuum=vacuum)
 #surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
-## stepped hcp
-surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vacuum, orthogonal=True, periodic=True)
+surf = hcp0001(symbol="Au", size=[4, 6, nlayer], a=a, vacuum=vacuum, orthogonal=True, periodic=True)  # stepped hcp
 surf = make_step(surf)
 
 #surf.pbc = True
