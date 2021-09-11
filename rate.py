@@ -118,7 +118,6 @@ for id in range(num_data):
 		Keq     = K[0]*(K[1]**3)*K[2]**2*K[3]**2*K[4]**2*K[5]**2
 		gamma   = (1/Keq)*(p[gas["NH3"]]**2/(p[gas["N2"]]*p[gas["H2"]]**3))
 		rate    = k*p[gas["N2"]]*theta[ads["vac"]]**2*(1-gamma) # maybe TOF
-		print(gamma)
 
 		score   = np.log10(rate)
 
