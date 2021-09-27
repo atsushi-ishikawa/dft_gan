@@ -61,7 +61,8 @@ numdata = len(df)
 # parameters
 #
 numuse     = int(numdata * 1.0)
-nclass     = 5 # 5 is better than 10
+#nclass     = 5
+nclass     = 10
 num_epoch  = 2000 # 2000 is better than 1000
 printnum   = 200
 batch_size = numdata//5  # from experience

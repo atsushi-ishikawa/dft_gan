@@ -78,12 +78,12 @@ for id in range(num_data):
 	if isinstance(df_reac.iloc[id].reaction_energy, list):
 		unique_id = df_reac.iloc[id].name
 		deltaE  = df_reac.iloc[id].reaction_energy
-		deltaE  = np.array(deltaE)
+		deltaH  = np.array(deltaE)
 
-		deltaE += deltaZPE
-		deltaE += deltaTherm
+		deltaH += deltaZPE
+		deltaH += deltaTherm
 
-		deltaG  = deltaE - T*deltaS
+		deltaG  = deltaH - T*deltaS
 		deltaG += RTlnP
 
 		K = np.exp(-deltaG/(kB*T))
@@ -121,7 +121,9 @@ for id in range(num_data):
 
 		score   = np.log10(rate)
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), "species": list(ads.keys()), "score": score}
+		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), "coverage": list(theta), 
+				"gibbs_energy": list(deltaG), "temperature": T, "total_pressure": ptot,
+				"species": list(ads.keys()), "score": score}
 
 		# add to json
 		with open(reac_json, "r") as f:
