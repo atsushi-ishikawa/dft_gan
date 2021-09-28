@@ -16,6 +16,8 @@ check = False  # check structure or not
 
 vacuum = 7.0
 
+random.seed(111)
+
 # lattice constant
 #elem = {"symbol": "Pt", "a": 3.9}
 #elem = {"symbol": "Ni", "a": 3.5}

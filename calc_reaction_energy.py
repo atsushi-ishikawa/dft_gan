@@ -65,22 +65,22 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 10  # maximum number of geomtry optimization steps
+steps = 150  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
 	prec   = "normal"
 	encut  = 400
-	#xc     = "beef-vdw"
-	xc     = "rpbe"
+	xc     = "beef-vdw"
+	#xc     = "rpbe"
 	ivdw   = 0
 	nsw    = 0  # steps
-	nelm   = 10 # 30
+	nelm   = 30
 	nelmin = 3
 	ibrion = -1
-	potim  = 0.2
+	potim  = 0.25
 	algo   = "Fast"  # sometimes VeryFast fails
 	ismear = 0
-	sigma  = 0.1 # 0.2...better?
+	sigma  = 0.1  # 0.1 or 0.2
 	ediff  = 1.0e-4
 	ediffg = -0.1
 	kpts   = [1, 1, 1]
@@ -287,22 +287,16 @@ for irxn in range(rxn_num):
 			site = sites[imol][0]
 			mol_type = get_mol_type(molecule, site)
 
+			#
+			# determine system type...1) gaseous 2) bare surface 3) surface + adsorbate
+			#
 			if mol_type == "gaseous":
 				# gas-phase species
 				atoms = Atoms(molecule)
-				set_unitcell_gasphase(atoms)
-				atoms.center()
-				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
-				calc = calc_mol
-				if check: view(atoms)
 
 			elif mol_type == "surf":
 				# bare surface
 				atoms = surf.copy()
-				atoms = fix_lower_surface(atoms)
-				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
-				calc = calc_surf
-				if check: view(atoms)
  
 			elif mol_type == "adsorbed":
 				# adsorbate calculation
@@ -331,17 +325,13 @@ for irxn in range(rxn_num):
 					offset = (0.50, 0.50)
 					height = height0
 
+				# get surface part from tmpdb
 				surf_formula = surf.get_chemical_formula()
 				name  = surf_formula + "gas" + unique_id
 				past  = tmpdb.get(name=name)
 				surf  = tmpdb.get_atoms(id=past.id)
 				atoms = surf.copy()
-
-				#atoms = fix_lower_surface(atoms)
 				add_adsorbate(atoms, adsorbate, offset=offset, height=height)
-				atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
-				calc  = calc_surf
-				optimize_unitcell = False
 			else:
 				print("something wrong in determining mol_type")
 				sys.exit(1)
@@ -361,12 +351,29 @@ for irxn in range(rxn_num):
 						atoms = tmpdb.get_atoms(id=past.id)
 						first_time = False
 
-			dir = workdir + unique_id + "_" + formula
-			set_calculator_with_directory(atoms, calc, directory=dir)
-
 			first_or_not = "first time" if first_time else "already calculated"
 			print("now calculating {0:>12s} ... {1:s}".format(formula, first_or_not))
 			if first_time:
+				#
+				# setup calculator and do calculation
+				#
+				if mol_type == "gaseous":
+					set_unitcell_gasphase(atoms)
+					atoms.center()
+					atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+					calc = calc_mol
+				elif mol_type == "surf":
+					atoms = fix_lower_surface(atoms)
+					atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+					calc = calc_surf
+				elif mol_type == "adsorbed":
+					atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+					calc  = calc_surf
+					optimize_unitcell = False  # do not do cell optimization for adsorbed case
+
+				dir = workdir + unique_id + "_" + formula
+				set_calculator_with_directory(atoms, calc, directory=dir)
+
 				if do_single_point:
 					# geometry optimization + single point energy calculation
 					sys.stdout.flush()
@@ -389,7 +396,9 @@ for irxn in range(rxn_num):
 
 			E += coefs[imol]*en
 
+			#
 			# recording to database
+			#
 			if(first_time):
 				id = tmpdb.reserve(name = formula + site + unique_id)
 				if id is None: # somebody is writing to db
@@ -405,7 +414,7 @@ for irxn in range(rxn_num):
 	deltaE = np.append(deltaE, dE)
 	print("reaction energy = %8.4f" % dE)
 
-	if abs(dE) > 50.0:
+	if abs(dE) > 100.0:
 		print("errorous reaction energy ... quit")
 		sys.exit(1)
 

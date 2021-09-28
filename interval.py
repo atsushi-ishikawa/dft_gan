@@ -228,7 +228,7 @@ def make_coverage_bar(n, yaxis_type):
 def make_reaction_energy_bar(n):
 	df = pd.read_json(reac_json)
 	df = df.set_index("unique_id")
-	df = df.sort_values("score", ascending=True)
+	df = df.sort_values("score", ascending=False)
 	deltaE = df.iloc[0]["reaction_energy"]
 	x = list(range(len(deltaE)))
 	x = ["N form", "H form", "NH form", "NH2 form", "NH3 form", "NH3 desorp"] 

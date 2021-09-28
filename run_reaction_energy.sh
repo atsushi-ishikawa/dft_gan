@@ -3,8 +3,8 @@
 #$ -S /bin/bash
 #$ -cwd
 #$ -q all.q
-#$ -pe openmpi32 32
-#$ -l hostname=vodka??
+#$ -pe openmpi24 24
+#$ -l hostname=whisky??&!whisky08&!whisky02&!whisky12
 
 ID=$1
 
