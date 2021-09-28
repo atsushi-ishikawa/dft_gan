@@ -217,7 +217,7 @@ def make_coverage_bar(n, yaxis_type):
 	figure.update_layout(margin=dict(r=10, t=20, b=10),
 						 xaxis_title="species", yaxis_title="coverage",
 						 #legend=dict(orientation="h", yanchor="bottom", y=1.02),
-						 height=height)
+						 height=height) # , width=700)
 	return figure
 
 #
@@ -228,7 +228,7 @@ def make_coverage_bar(n, yaxis_type):
 def make_reaction_energy_bar(n):
 	df = pd.read_json(reac_json)
 	df = df.set_index("unique_id")
-	df = df.sort_values("score", ascending=False)
+	df = df.sort_values("score", ascending=True)
 	deltaE = df.iloc[0]["reaction_energy"]
 	x = list(range(len(deltaE)))
 	x = ["N form", "H form", "NH form", "NH2 form", "NH3 form", "NH3 desorp"] 
