@@ -78,10 +78,9 @@ for id in range(num_data):
 	if isinstance(df_reac.iloc[id].reaction_energy, list):
 		unique_id = df_reac.iloc[id].name
 		deltaE  = df_reac.iloc[id].reaction_energy
-		deltaH  = np.array(deltaE)
+		deltaE  = np.array(deltaE)
 
-		deltaH += deltaZPE
-		deltaH += deltaTherm
+		deltaH  = deltaE + deltaZPE + deltaTherm
 
 		deltaG  = deltaH - T*deltaS
 		deltaG += RTlnP
