@@ -23,11 +23,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
 parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
 parser.add_argument("--loss_file", default="loss.h5", help="file for generator and descriminator losses")
+parser.add_argument("--method", default="gan", help="fake sample generation method", choices=["gan", "random"])
 
 args = parser.parse_args()
 surf_json = args.surf_json
 reac_json = args.reac_json
 loss_file = args.loss_file
+method = args.method
 
 if not os.path.exists(loss_file):
 	# prepare loss h5 file if not exits
@@ -61,9 +63,12 @@ numdata = len(df)
 # parameters
 #
 numuse     = int(numdata * 1.0)
-#nclass     = 5
-nclass     = 10
-num_epoch  = 2000 # 2000 is better than 1000
+nclass     = 5
+#nclass     = 10
+if method == "random":
+	num_epoch  = 1
+else:
+	num_epoch  = 2000 # 2000 is better than 1000
 printnum   = 200
 batch_size = numdata//5  # from experience
 z_dim = 100
@@ -378,14 +383,24 @@ gan(num_epoch=num_epoch)
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
 
-fakesystem = []
-for target in range(nclass):
-	fakesystem.append(generate(G, target=target))
+if method == "gan":
+	# using GAN
+	fakesystem = []
+	for target in range(nclass):
+		fakesystem.append(generate(G, target=target))
 
-target_class = nclass-1
-#target_class = 0
+	target_class = nclass-1
+	samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
 
-samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
+else:
+	# random -- for benchmarking
+	num_generate = 20
+	randoms = np.array([[0]*natom]*num_generate)
+	for i in range(num_generate):
+		random = np.array(list(np.random.randint(0, 2, natom)))
+		randoms[i] = random
+
+	samples = make_atomic_numbers(randoms, df["atomic_numbers"])
 #
 # Make fake examples: need some template -- should be fixed
 #
