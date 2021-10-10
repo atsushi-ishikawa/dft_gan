@@ -194,9 +194,8 @@ figure.update_yaxes(title="Reaction energy (eV)", title_font_family="Arial", col
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat=".1f",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, zeroline=True, zerolinecolor="black")
 figure.write_image("reaction_energy2.pdf")
-#
+
 # coverage
-#
 species  = df_reac.iloc[0]["species"]
 figure = go.Figure()
 for run in runs:
