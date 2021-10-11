@@ -6,6 +6,7 @@ import numpy as np
 import seaborn as sns
 from tools import load_ase_json
 import h5py
+import argparse
 
 def get_colorpalette(colorpalette, n_colors):
 	palette = sns.color_palette(colorpalette, n_colors)
@@ -19,9 +20,16 @@ reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
 eneg_file = os.path.join(dirname + "/ped.h5")
 
-# parameters
-runs = [0,2,3]        # which runs do you want to plot?
-height = 500            # height of each figure
+# argument
+parser = argparse.ArgumentParser()
+parser.add_argument("--runmax", default=0,   type=int, help="maximum number of run")
+parser.add_argument("--runs",   default=[0], type=int, nargs="+", help="which runs do you want to plot?")
+parser.add_argument("--height", default=500, type=int, help="height of figures")
+
+args   = parser.parse_args()
+runmax = args.runmax
+runs   = args.runs
+height = args.height
 
 #
 # load data into DataFrame
@@ -37,7 +45,8 @@ df2 = df2.set_index("unique_id")
 df = pd.concat([df1, df2], axis=1)
 df = df[df["score"].notna()]
 
-runmax = df["run"].max()
+if runmax == 0:
+	runmax = df["run"].max()
 runmin = df["run"].min()
 maxval = df["score"].max()
 minval = df["score"].min()
@@ -111,7 +120,7 @@ figure = go.Figure()
 figure.add_trace(go.Scatter(x=epoch, y=D_loss, mode="lines", name="Discriminator loss", marker_color="cadetblue", line_width=0.1))
 figure.add_trace(go.Scatter(x=epoch, y=G_loss, mode="lines", name="Generator loss",     marker_color="royalblue", line_width=0.1))
 
-figure.update_layout(plot_bgcolor="white")
+figure.update_layout(plot_bgcolor="white", height=height)
 figure.update_xaxes(title="Epoch", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
@@ -127,7 +136,7 @@ for run in range(runmax+1):
  	figure.add_trace(go.Violin(x=df_surf["run"][df_surf["run"]==run], y=df_surf["score"][df_surf["run"]==run], 
  					box=dict(visible=True), points="all", fillcolor=colors[run+1], line_color="black", line_width=1, opacity=0.8, name="Run "+str(run)))
 
-figure.update_layout(plot_bgcolor="white")
+figure.update_layout(plot_bgcolor="white", height=height)
 figure.update_xaxes(title="Run", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
@@ -146,7 +155,7 @@ for run in range(runmax+1):
 figure = go.Figure()
 figure.add_trace(go.Scatter(x=list(range(runmax+1)), y=means, marker=dict(size=10)))
 
-figure.update_layout(plot_bgcolor="white")
+figure.update_layout(plot_bgcolor="white", height=height)
 figure.update_xaxes(title="Run", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, nticks=int(runmax+1))
@@ -164,8 +173,8 @@ for run in runs:
 	deltaE = df_surf.loc[idx]["reaction_energy"]
 	figure.add_trace(go.Bar(x=x, y=deltaE, marker_line_width=1, marker_color=colors[run+1], marker_line_color="black", name="Run "+str(run)))
 
-figure.update_layout(plot_bgcolor="white")
-figure.update_xaxes(title="Species", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
+figure.update_layout(plot_bgcolor="white", height=height, width=2*height)
+figure.update_xaxes(title="Reactions", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
 figure.update_yaxes(title="Reaction energy (eV)", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
@@ -181,7 +190,7 @@ for run in runs:
 	coverage = df_surf.loc[idx]["coverage"]
 	figure.add_trace(go.Bar(x=species, y=coverage, marker_color=colors[run+1], marker_line_width=1, marker_line_color="black", name="Run "+str(run)))
 
-figure.update_layout(plot_bgcolor="white")
+figure.update_layout(plot_bgcolor="white", height=height, width=2*height)
 figure.update_xaxes(title="Species", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
@@ -204,7 +213,7 @@ for run in runs:
 	figure.add_trace(go.Scatter(x=x, y=y, mode="lines", marker_color=colors[run+1], name="Run "+str(run)))
 	h5file.close()
 
-figure.update_layout(plot_bgcolor="white")
+figure.update_layout(plot_bgcolor="white", height=height, width=2*height)
 figure.update_xaxes(title="Steps", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
