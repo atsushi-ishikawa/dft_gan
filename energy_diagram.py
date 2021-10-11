@@ -18,11 +18,11 @@ args = parser.parse_args()
 reac_json = args.reac_json
 best = args.best
 eneg_file = "ped.h5"
+unique_id = args.id
 
-if best:
+if unique_id == "" and best:
+	# plot only the overall best one
 	unique_id = find_highest(json=reac_json, score="score")
-else:
-	unique_id = args.id
 
 # reation energies and equilibrium constant
 df_reac = pd.read_json(reac_json)
