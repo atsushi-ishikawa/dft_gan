@@ -19,8 +19,10 @@ reac_json = os.path.join(dirname + "/reaction_energy.json")
 loss_file = os.path.join(dirname + "/loss.h5")
 eneg_file = os.path.join(dirname + "/ped.h5")
 
-interval = 60*(60*1e3)  # in milisec
-height = 500 # height of each figure
+# parameters
+runs = [0,2,3]        # which runs do you want to plot?
+height = 500            # height of each figure
+
 #
 # load data into DataFrame
 #   1) surf.json --> df_surf
@@ -134,7 +136,7 @@ figure.update_yaxes(title="Score", title_font_family="Arial", color="black", tit
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
 figure.write_image("violin.pdf")
 #
-# mean
+# mean plot
 #
 figure = go.Figure()
 means = []
@@ -147,7 +149,7 @@ figure.add_trace(go.Scatter(x=list(range(runmax+1)), y=means, marker=dict(size=1
 figure.update_layout(plot_bgcolor="white")
 figure.update_xaxes(title="Run", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat="",
-					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
+					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, nticks=int(runmax+1))
 figure.update_yaxes(title="Mean score", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat=".1f",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
@@ -155,8 +157,6 @@ figure.write_image("mean.pdf")
 #
 # reaction energy and coverage for selected case
 #
-runs = [0,1,2]
-
 x = ["N form", "H form", "NH form", "NH2 form", "NH3 form", "NH3 desorp"] 
 figure = go.Figure()
 for run in runs:
@@ -170,7 +170,7 @@ figure.update_xaxes(title="Species", title_font_family="Arial", color="black", t
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True)
 figure.update_yaxes(title="Reaction energy (eV)", title_font_family="Arial", color="black", title_font_size=18, tickwidth=2, ticklen=8,
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat=".1f",
-					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, zeroline=True, zerolinecolor="black")
+					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, zeroline=True, zerolinecolor="black", zerolinewidth=1)
 figure.write_image("reaction_energy.pdf")
 
 # coverage
