@@ -212,3 +212,4 @@ figure.update_yaxes(title="Potential energy (eV)", title_font_family="Arial", co
 					showline=True, showgrid=False, showticklabels=True, linecolor="black", linewidth=2, tickformat=".1f",
 					ticks="outside", tickfont=dict(family="Arial", size=16, color="black"), mirror=True, range=[-4,2])
 figure.write_image("ped2.pdf")
+
