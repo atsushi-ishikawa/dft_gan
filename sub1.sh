@@ -17,6 +17,8 @@ if test $host == "whisky" -o $host == "vodka"; then
 	stat=qstat
 	sub=qsub
 else
+	echo "This is not computational server. Mistake?"
+	exit
 	stat=pjstat
 	sub=pjsub
 fi

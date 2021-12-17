@@ -1,8 +1,13 @@
 #!/bin/sh
 
 cpu_team="whisky" # ("whisky | "vodka" | "mio" | "mio02")
-dir=${HOME}/ase/nn_reac/
+dir=${HOME}/ase/nn_reac2/
 host=`hostname`
+
+if test $host == "whisky" -o $host == "vodka"; then
+	echo "This is computational server. Mistake?"
+	exit
+fi
 #
 # copy json file from VASP calculating clusters
 #

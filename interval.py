@@ -35,7 +35,7 @@ external_stylesheets = [
 		'crossorigin': 'anonymous'
 	}
 ]
-app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac/", external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, requests_pathname_prefix="/nn_reac2/", external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(
 	children=[
