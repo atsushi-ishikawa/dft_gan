@@ -98,6 +98,5 @@ for i in range(num_data):
 
 	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
 	db.write(surf_copy, data=data)
-	#write("POSCAR", surf_copy)
+	write("POSCAR", surf_copy)
 	id += 1
-
