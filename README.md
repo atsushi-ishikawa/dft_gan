@@ -1,4 +1,4 @@
-## nn_reac: Lets' try to predict catalyst activity with NN or GAN
+## dft_gan: the combined use of DFT, microkinetics, and GAN
 ### flow
 
 1) make_surf.py: make surface --> surf.json is generated
