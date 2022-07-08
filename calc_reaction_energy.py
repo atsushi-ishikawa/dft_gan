@@ -98,12 +98,15 @@ if "vasp" in calculator:
 	ldipol = True
 	idipol = 3
 
-	calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
-					 nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True,ispin=ispin,  pp=pp, npar=npar, nsim=nsim, isym=isym,
-					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
-	calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion, potim=potim, nsw=nsw,
-					 nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym,
-					 lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
+	calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
+					 potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True, ispin=ispin, pp=pp,
+					 npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0,
+					 sigma=sigma, lorbit=lorbit)
+	calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
+					 potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp,
+					 npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear,
+					 sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
+
 elif "emt" in calculator:
 	calc_mol  = EMT()
 	calc_surf = EMT()
@@ -165,7 +168,7 @@ def run_optimizer(atoms, steps=100, optimize_unitcell=False, keep_cell_shape=Fal
 		# EMT
 		opt = BFGS(atoms)
 		opt.run(fmax=0.1, steps=steps)
-		en = atoms.get_potential_energy()
+		atoms.get_potential_energy()
 
 	# do calculation
 	en = atoms.get_potential_energy()
@@ -203,7 +206,7 @@ def add_to_json(jsonfile, data):
 	# add data to database
 	#
 	with open(jsonfile, "r") as f:
-	# remove "doing" record as calculation is done
+		# remove "doing" record as calculation is done
 		datum = json.load(f)
 		for i in range(len(datum)):
 			if (datum[i]["unique_id"] == unique_id) and (datum[i]["status"] == "doing"):
@@ -219,7 +222,7 @@ def add_to_json(jsonfile, data):
 def savefig_atoms(atoms, filename):
 	import matplotlib.pyplot as plt
 	from ase.visualize.plot import plot_atoms
-	fig,ax = plt.subplots()
+	fig, ax = plt.subplots()
 	#plot_atoms(atoms, ax, rotation='280x,0y,0z')
 	plot_atoms(atoms, ax, rotation='0x,0y,0z')
 	ax.set_axis_off()
@@ -341,7 +344,7 @@ for irxn in range(rxn_num):
 			#
 			formula = atoms.get_chemical_formula()
 			try:
-				past = tmpdb.get(name = formula + site + unique_id)
+				past = tmpdb.get(name=formula + site + unique_id)
 			except:
 				first_time = True
 			else:
@@ -379,11 +382,12 @@ for irxn in range(rxn_num):
 					sys.stdout.flush()
 					en, atoms = run_optimizer(atoms, steps=steps, optimize_unitcell=optimize_unitcell)
 					sys.stdout.flush()
-					en = atoms.get_potential_energy() # single point
+					atoms.get_potential_energy()  # single point
 				else:
 					# geometry optimization only
 					sys.stdout.flush()
-					en, atoms = run_optimizer(atoms,  steps=steps, optimize_unitcell=optimize_unitcell, keep_cell_shape=keep_cell_shape)
+					en, atoms = run_optimizer(atoms,  steps=steps, optimize_unitcell=optimize_unitcell,
+											  keep_cell_shape=keep_cell_shape)
 
 				if savefig and mol_type == "adsorbed":
 					savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
@@ -400,15 +404,14 @@ for irxn in range(rxn_num):
 			# recording to database
 			#
 			if(first_time):
-				id = tmpdb.reserve(name = formula + site + unique_id)
-				if id is None: # somebody is writing to db
+				id = tmpdb.reserve(name=formula + site + unique_id)
+				if id is None:  # somebody is writing to db
 					continue
 				else:
 					name = formula + site + unique_id
 					tmpdb.write(atoms, name=name, id=id, data={"energy": en, "site": site})
 
 		energies[side] = E
-
 
 	dE = energies["product"] - energies["reactant"]
 	deltaE = np.append(deltaE, dE)
@@ -425,4 +428,3 @@ if check: view(surf)
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
-
