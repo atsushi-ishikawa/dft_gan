@@ -8,33 +8,40 @@ import numpy as np
 import os
 import sys
 import random
+import argparse
 
-argvs = sys.argv
-num_data = int(argvs[1])
+parser = argparse.ArgumentParser()
+parser.add_argument("--num", default=1, help="number of surfaces generating")
+parser.add_argument("--check", action="store_true", help="check structure or not")
+parser.add_argument("--symbol", default="Pt", help="element")
+parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fcc", "step_hcp"])
+parser.add_argument("--vacuum", default=7.0, help="length of vacuum layer")
+parser.add_argument("--symbol2", default="Rh", help="second element for alloy")
+parser.add_argument("--max_replace_percent", default=100, help="max percent of second element")
 
-check = False  # check structure or not
-
-vacuum = 7.0
-
-random.seed(111)
+args = parser.parse_args()
+num_data = args.num
+check    = args.check
+element  = args.symbol
+surf_geom = args.surf_geom
+vac = args.vacuum
+elem2 = args.symbol2
+max_rep = float(args.max_replace_percent)
 
 # lattice constant
-#elem = {"symbol": "Pt", "a": 3.9}
-#elem = {"symbol": "Ni", "a": 3.5}
-#elem = {"symbol": "Ru", "a": 2.7*1.4}
-elem = {"symbol": "Ru", "a": 2.7}
+lattice_const = {"Ru": 2.7*1.4, "Pt": 3.9, "Ni": 3.5}
+elem = {"symbol": element, "a": lattice_const[element]}
 
-## flat fcc
-#surf = fcc111(symbol=elem["symbol"], size=[2, 2, 5], a=elem["a"], vacuum=vacuum)
-#surf = fcc111(symbol=elem["symbol"], size=[3, 3, 4], a=elem["a"], vacuum=vacuum)
-
-## stepped fcc
-#surf = fcc211(symbol=elem["symbol"], size=[6, 3, 4], a=elem["a"], vacuum=vacuum)
-
-## stepped hcp
-nlayer = 4
-surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vacuum, orthogonal=True, periodic=True)
-surf = make_step(surf)
+if surf_geom == "fcc111":
+    nlayer = 3
+    surf = fcc111(symbol=elem["symbol"], size=[4, 4, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
+elif surf_geom == "step_fcc":
+    nlayer = 4
+    surf = fcc211(symbol=elem["symbol"], size=[6, 3, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
+elif surf_geom == "step_hcp":
+    nlayer = 4
+    surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
+    surf = make_step(surf)
 
 ## stepped non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
@@ -42,30 +49,28 @@ surf = make_step(surf)
 #surf = surface(bulk, indices=[1,1,1], layers=9, vacuum=vacuum)
 #surf = surf*[3,3,1]
 
-#surf.pbc = True
-surf.translate([0, 0, -vacuum+1.0])
+surf.translate([0, 0, -vac+1.0])
 
 calc  = EMT()
-#
-# replace atoms by some element in the list
-#
-natoms = len(surf.get_atomic_numbers())
-max_replace = int(1.0*natoms)
 
-elem2 = ["Rh"]
-#elem2 = ["Pd"]
-#elem2 = ["Ru"]
 
 outjson = "surf.json"
-
 # remove old one
 if os.path.exists(outjson):
     os.remove(outjson)
 
 db = connect(outjson)
 #
-# shuffle
+# replace atoms by some element in the list
 #
+natoms = len(surf.get_atomic_numbers())
+max_replace = int((max_rep/100)*natoms)
+
+elem2 = ["Pd"]
+# elem2 = ["Rh"]
+# elem2 = ["Ru"]
+
+random.seed(111)
 id = 1
 for i in range(num_data):
     #
@@ -74,7 +79,10 @@ for i in range(num_data):
     surf_copy = surf.copy()
 
     # how many atoms to replace?
-    num_replace = random.choice(range(1, max_replace + 1))
+    if max_replace != 0:
+        num_replace = random.choice(range(1, max_replace + 1))
+    else:
+        num_replace = 0
 
     data = {}
     # replace element

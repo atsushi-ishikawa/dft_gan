@@ -435,4 +435,3 @@ for sample in samples:
     #
     if write:
         db.write(surf, data=data)
-

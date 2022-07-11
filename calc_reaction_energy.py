@@ -3,7 +3,6 @@ from ase.build import add_adsorbate
 from ase.visualize import view
 from ase.calculators.vasp import Vasp
 from ase.calculators.emt import EMT
-from ase.collections import g2
 from ase.db import connect
 from ase.optimize import BFGS
 from tools import fix_lower_surface
@@ -75,9 +74,7 @@ def run_optimizer(atoms, steps=100, optimize_unitcell=False, keep_cell_shape=Fal
     # do calculation
     en = atoms.get_potential_energy()
 
-    #
     # reset vasp calculator to single point energy's one
-    #
     if "vasp" in calculator:
         if do_single_point:
             calc.int_params["ibrion"]  = -1
@@ -104,9 +101,8 @@ def get_mol_type(mol, site):
 
 
 def add_to_json(jsonfile, data):
-    #
     # add data to database
-    #
+
     with open(jsonfile, "r") as f:
         # remove "doing" record as calculation is done
         datum = json.load(f)
@@ -133,23 +129,6 @@ def savefig_atoms(atoms, filename):
 
 # --------------------- end functions
 
-# whether to cleanup working directory for vasp
-clean = False
-# save figures for structure
-savefig = False
-# whether to do sigle point energy calculation after geometry optimization
-do_single_point = False
-# whether to keep cell shape (i.e. ISIF=4 or 7)
-keep_cell_shape = True  # False...gives erronous reaction energy
-# whether to check coordinate by view
-check = False
-
-optimize_unitcell = True
-
-# workdir to store vasp data
-workdir = "/work/a_ishi/"
-#workdir = "/home/a_ishi/ase/nn_reac/work/"
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--id", help="id for surface system")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
@@ -161,15 +140,37 @@ unique_id  = args.id
 calculator = args.calculator.lower()
 surf_json  = args.surf_json
 reac_json  = args.reac_json
+
+# whether to cleanup working directory for vasp
+clean = False
+# save figures for structure
+savefig = False
+# whether to do sigle point energy calculation after geometry optimization
+do_single_point = False
+# whether to keep cell shape (i.e. ISIF=4 or 7)
+keep_cell_shape = True  # False...gives erronous reaction energy
+# whether to check coordinate by view
+check = False
+# whether to optimize unit cell
+optimize_unitcell = False
+
+reactionfile = "nh3.txt"
+#reactionfile = "orr.txt"
+
+# workdir to store vasp data
+#workdir = "/work/a_ishi/"
+workdir = "/home/a_ishi/dft_gan/work/"
+
 #
 # temprary database to avoid overlapping calculations
 #
-tmpdbfile = 'tmp.db'
+tmpdbfile = "tmp.db"
 tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
 tmpdb = connect(tmpdbfile)
 
 # molecule collection from ase
-collection = g2
+data_json  = "g2.json"
+collection = connect(os.path.join(os.getcwd(), "data", data_json))
 
 if not os.path.isfile(reac_json):
     # reac_json does not exist -- make
@@ -186,7 +187,6 @@ if "vasp" in calculator:
     prec   = "normal"
     encut  = 400
     xc     = "beef-vdw"
-    #xc     = "rpbe"
     ivdw   = 0
     nsw    = 0  # steps
     nelm   = 30
@@ -230,7 +230,6 @@ else:
     print("currently VASP or EMT is supported ... quit")
     sys.exit(1)
 
-reactionfile = "nh3.txt"
 (r_ads, r_site, r_coef,  p_ads, p_site, p_coef) = get_reac_and_prod(reactionfile)
 rxn_num = get_number_of_reaction(reactionfile)
 
@@ -275,7 +274,9 @@ for irxn in range(rxn_num):
             if mol[0] == "surf":
                 molecule = mol[0]
             else:
-                molecule = collection[mol[0]]
+                #molecule = collection[mol[0]]
+                id_ = collection.get(name=mol[0]).id
+                molecule = collection.get_atoms(id=id_)
 
             site = sites[imol][0]
             mol_type = get_mol_type(molecule, site)
@@ -292,26 +293,28 @@ for irxn in range(rxn_num):
  
             elif mol_type == "adsorbed":
                 # adsorbate calculation
-                adsorbate = collection[mol[0]]
+                # adsorbate = collection[mol[0]]
+                id_ = collection.get(name=mol[0]).id
+                adsorbate = collection.get_atoms(id=id_)
                 adsorbate.rotate(180, "y")
                 height0 = 1.5  # 1.3
                 if site == "atop":
-                    #offset = (0.50, 0.50)  # for [2, 2] supercell
+                    offset = (0.50, 0.50)  # for [2, 2] supercell
                     #offset = (0.33, 0.33)  # for [3, 3] supercell
                     #offset = (0.40, 0.50)  # for stepped fcc
-                    offset = (0.37, 0.44)  # for stepped hcp
+                    #offset = (0.37, 0.44)  # for stepped hcp
                     height = height0
                 elif site == "br" or site == "bridge":
-                    #offset = (0.50, 0.50)  # for [2, 2] supercell
+                    offset = (0.50, 0.50)  # for [2, 2] supercell
                     #offset = (0.33, 0.33)  # for [3, 3] supercell
                     #offset = (0.34, 0.32)  # for stepped fcc
-                    offset = (0.50, 0.50)  # for stepped hcp
+                    #offset = (0.50, 0.50)  # for stepped hcp
                     height = height0 + 0.2
                 elif site == "fcc":
-                    #offset = (0.33, 0.33)  # for [2, 2] supercell
+                    offset = (0.33, 0.33)  # for [2, 2] supercell
                     #offset = (0.20, 0.20)  # for [3, 3] supercell
                     #offset = (0.22, 0.32)  # for stepped fcc
-                    offset = (0.50, 0.57)  # for stepped hcp...x and y cannot be rotated
+                    #offset = (0.50, 0.57)  # for stepped hcp...x and y cannot be rotated
                     height = height0
                 else:
                     offset = (0.50, 0.50)
@@ -409,7 +412,6 @@ for irxn in range(rxn_num):
     if abs(dE) > 100.0:
         print("errorous reaction energy ... quit")
         sys.exit(1)
-
     #
     # done
     #
