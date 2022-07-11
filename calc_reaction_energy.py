@@ -17,105 +17,7 @@ import argparse
 import shutil
 import socket
 
-# whether to cleanup working directory for vasp
-clean = False
-# save figures for structure
-savefig = False
-# whether to do sigle point energy calculation after geometry optimization
-do_single_point = False
-# whether to keep cell shape (i.e. ISIF=4 or 7)
-keep_cell_shape = True  # False...gives erronous reaction energy
-# whether to check coordinate by view
-check = False
-
-optimize_unitcell = True
-
-# workdir to store vasp data
-workdir = "/work/a_ishi/"
-#workdir = "/home/a_ishi/ase/nn_reac/work/"
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--id", help="id for surface system")
-parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
-parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
-parser.add_argument("--reac_json",  default="reaction_energy.json", help="file to write reaction energy")
-
-args = parser.parse_args()
-unique_id  = args.id
-calculator = args.calculator.lower()
-surf_json  = args.surf_json
-reac_json  = args.reac_json
-#
-# temprary database to avoid overlapping calculations
-#
-tmpdbfile = 'tmp.db'
-tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
-tmpdb = connect(tmpdbfile)
-
-# molecule collection from ase
-collection = g2
-
-
-if not os.path.isfile(reac_json):
-    # reac_json does not exist -- make
-    with open(reac_json, "w") as f:
-        f.write(json.dumps([], indent=4))
-
-print("hostname: ", socket.gethostname())
-print("id: ", unique_id)
-
-db = connect(surf_json)
-steps = 150  # maximum number of geomtry optimization steps
-
-if "vasp" in calculator:
-    prec   = "normal"
-    encut  = 400
-    xc     = "beef-vdw"
-    #xc     = "rpbe"
-    ivdw   = 0
-    nsw    = 0  # steps
-    nelm   = 30
-    nelmin = 3
-    ibrion = -1
-    potim  = 0.25
-    algo   = "Fast"  # sometimes VeryFast fails
-    ismear = 0
-    sigma  = 0.1  # 0.1 or 0.2
-    ediff  = 1.0e-4
-    ediffg = -0.1
-    kpts   = [1, 1, 1]
-    ispin  = 2
-    kgamma = True
-    pp     = "potpaw_PBE.54"
-    npar   = 6
-    nsim   = npar
-    isym   = 0
-    lreal  = True  # False...reaction energy too low
-    lorbit = 10    # to avoid error
-    lwave  = True if do_single_point else False
-    lcharg = True if do_single_point else False
-
-    ldipol = True
-    idipol = 3
-
-    calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
-                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True, ispin=ispin, pp=pp,
-                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0,
-                     sigma=sigma, lorbit=lorbit)
-    calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
-                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp,
-                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear,
-                     sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
-
-elif "emt" in calculator:
-    calc_mol  = EMT()
-    calc_surf = EMT()
-    optimize_unitcell = False
-else:
-    print("currently VASP or EMT is supported ... quit")
-    sys.exit(1)
-
-
+# --- functions ---
 def set_unitcell_gasphase(Atoms, vacuum=10.0):
     cell = np.array([1, 1, 1]) * vacuum
     Atoms.set_cell(cell)
@@ -231,6 +133,103 @@ def savefig_atoms(atoms, filename):
 
 # --------------------- end functions
 
+# whether to cleanup working directory for vasp
+clean = False
+# save figures for structure
+savefig = False
+# whether to do sigle point energy calculation after geometry optimization
+do_single_point = False
+# whether to keep cell shape (i.e. ISIF=4 or 7)
+keep_cell_shape = True  # False...gives erronous reaction energy
+# whether to check coordinate by view
+check = False
+
+optimize_unitcell = True
+
+# workdir to store vasp data
+workdir = "/work/a_ishi/"
+#workdir = "/home/a_ishi/ase/nn_reac/work/"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--id", help="id for surface system")
+parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
+parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json",  default="reaction_energy.json", help="file to write reaction energy")
+
+args = parser.parse_args()
+unique_id  = args.id
+calculator = args.calculator.lower()
+surf_json  = args.surf_json
+reac_json  = args.reac_json
+#
+# temprary database to avoid overlapping calculations
+#
+tmpdbfile = 'tmp.db'
+tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
+tmpdb = connect(tmpdbfile)
+
+# molecule collection from ase
+collection = g2
+
+if not os.path.isfile(reac_json):
+    # reac_json does not exist -- make
+    with open(reac_json, "w") as f:
+        f.write(json.dumps([], indent=4))
+
+print("hostname: ", socket.gethostname())
+print("id: ", unique_id)
+
+db = connect(surf_json)
+steps = 150  # maximum number of geomtry optimization steps
+
+if "vasp" in calculator:
+    prec   = "normal"
+    encut  = 400
+    xc     = "beef-vdw"
+    #xc     = "rpbe"
+    ivdw   = 0
+    nsw    = 0  # steps
+    nelm   = 30
+    nelmin = 3
+    ibrion = -1
+    potim  = 0.25
+    algo   = "Fast"  # sometimes VeryFast fails
+    ismear = 0
+    sigma  = 0.1  # 0.1 or 0.2
+    ediff  = 1.0e-4
+    ediffg = -0.1
+    kpts   = [1, 1, 1]
+    ispin  = 2
+    kgamma = True
+    pp     = "potpaw_PBE.54"
+    npar   = 6
+    nsim   = npar
+    isym   = 0
+    lreal  = True  # False...reaction energy too low
+    lorbit = 10    # to avoid error
+    lwave  = True if do_single_point else False
+    lcharg = True if do_single_point else False
+
+    ldipol = True
+    idipol = 3
+
+    calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
+                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True, ispin=ispin, pp=pp,
+                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0,
+                     sigma=sigma, lorbit=lorbit)
+    calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
+                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp,
+                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear,
+                     sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
+
+elif "emt" in calculator:
+    calc_mol  = EMT()
+    calc_surf = EMT()
+    optimize_unitcell = False
+else:
+    print("currently VASP or EMT is supported ... quit")
+    sys.exit(1)
+
 reactionfile = "nh3.txt"
 (r_ads, r_site, r_coef,  p_ads, p_site, p_coef) = get_reac_and_prod(reactionfile)
 rxn_num = get_number_of_reaction(reactionfile)
@@ -252,15 +251,6 @@ if unique_id in df_reac.index:
     elif df_reac.loc[unique_id]["status"] == "doing":
         print("somebody is doing")
         sys.exit(0)
-
-
-# no one is doing this system ... calculate here
-#with open(reac_json, "r") as f:
-#	datum = json.load(f)
-#	data  = {"unique_id": unique_id, "status": "doing"}
-#	datum.append(data)
-#with open(reac_json, "w") as f:
-#	json.dump(datum, f, indent=4)
 
 deltaE = np.array([])
 
@@ -289,7 +279,6 @@ for irxn in range(rxn_num):
 
             site = sites[imol][0]
             mol_type = get_mol_type(molecule, site)
-
             #
             # determine system type...1) gaseous 2) bare surface 3) surface + adsorbate
             #
