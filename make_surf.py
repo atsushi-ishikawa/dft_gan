@@ -60,7 +60,7 @@ outjson = "surf.json"
 
 # remove old one
 if os.path.exists(outjson):
-	os.remove(outjson)
+    os.remove(outjson)
 
 db = connect(outjson)
 #
@@ -68,35 +68,35 @@ db = connect(outjson)
 #
 id = 1
 for i in range(num_data):
-	#
-	# make shuffled surface
-	#
-	surf_copy = surf.copy()
+    #
+    # make shuffled surface
+    #
+    surf_copy = surf.copy()
 
-	# how many atoms to replace?
-	num_replace = random.choice(range(1, max_replace + 1))
+    # how many atoms to replace?
+    num_replace = random.choice(range(1, max_replace + 1))
 
-	data = {}
-	# replace element
-	for iatom in range(num_replace):
-		surf_copy[iatom].symbol = random.choice(elem2)
+    data = {}
+    # replace element
+    for iatom in range(num_replace):
+        surf_copy[iatom].symbol = random.choice(elem2)
 
-	# get element atomic_numbers
-	atomic_numbers = surf_copy.get_atomic_numbers()
-	atomic_numbers = list(atomic_numbers)  # make non-numpy
+    # get element atomic_numbers
+    atomic_numbers = surf_copy.get_atomic_numbers()
+    atomic_numbers = list(atomic_numbers)  # make non-numpy
 
-	# shuffle element atomic_numbers
-	np.random.shuffle(atomic_numbers)
+    # shuffle element atomic_numbers
+    np.random.shuffle(atomic_numbers)
 
-	# set new element atomic_numbers
-	surf_copy.set_atomic_numbers(atomic_numbers)
-	formula = surf_copy.get_chemical_formula()
+    # set new element atomic_numbers
+    surf_copy.set_atomic_numbers(atomic_numbers)
+    formula = surf_copy.get_chemical_formula()
 
-	surf_copy.set_calculator(calc)
+    surf_copy.set_calculator(calc)
 
-	if check: view(surf_copy)
+    if check: view(surf_copy)
 
-	data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
-	db.write(surf_copy, data=data)
-	write("POSCAR", surf_copy)
-	id += 1
+    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+    db.write(surf_copy, data=data)
+    write("POSCAR", surf_copy)
+    id += 1
