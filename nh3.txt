@@ -1,0 +1,6 @@
+N2 + 2*surf           --ER-->  2*N_fcc
+H2 + 2*surf           --ER-->  2*H_bridge
+N_fcc + H_bridge      --ER-->  NH_fcc + surf
+NH_fcc + H_bridge     --ER-->  NH2_bridge + surf
+NH2_bridge + H_bridge --ER-->  NH3_atop + surf
+NH3_atop              --ads--> NH3 + surf
