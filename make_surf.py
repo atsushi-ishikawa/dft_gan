@@ -50,7 +50,7 @@ calc  = EMT()
 # replace atoms by some element in the list
 #
 natoms = len(surf.get_atomic_numbers())
-max_replace = int(1.0* natoms)
+max_replace = int(1.0*natoms)
 
 elem2 = ["Rh"]
 #elem2 = ["Pd"]
