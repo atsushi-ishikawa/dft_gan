@@ -1,0 +1,13 @@
+ase==3.22.1
+dash==2.6.2
+dash_core_components==2.0.0
+dash_html_components==2.0.0
+h5py==3.7.0
+matplotlib==3.6.0
+numpy==1.23.3
+pandas==1.5.0
+plotly==5.10.0
+scikit_learn==1.1.2
+scipy==1.9.1
+seaborn==0.12.0
+torch==1.12.1
