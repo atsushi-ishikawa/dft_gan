@@ -161,9 +161,7 @@ reactionfile = "nh3.txt"
 #workdir = "/work/a_ishi/"
 workdir = "/home/a_ishi/dft_gan/work/"
 
-#
 # temprary database to avoid overlapping calculations
-#
 tmpdbfile = "tmp.db"
 tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
 tmpdb = connect(tmpdbfile)
@@ -280,9 +278,8 @@ for irxn in range(rxn_num):
 
             site = sites[imol][0]
             mol_type = get_mol_type(molecule, site)
-            #
+
             # determine system type...1) gaseous 2) bare surface 3) surface + adsorbate
-            #
             if mol_type == "gaseous":
                 # gas-phase species
                 atoms = Atoms(molecule)
@@ -330,9 +327,9 @@ for irxn in range(rxn_num):
             else:
                 print("something wrong in determining mol_type")
                 sys.exit(1)
+
             #
-            # Identification done. Look for temporary database
-            # for identical system.
+            # Identification done. Look for temporary database for identical system.
             #
             formula = atoms.get_chemical_formula()
             try:
