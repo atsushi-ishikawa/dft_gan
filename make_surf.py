@@ -3,7 +3,7 @@ from ase.visualize import view
 from ase.calculators.emt import EMT
 from ase.db import connect
 from ase.io import read, write
-from tools import make_step, mirror_invert
+from tools import make_step, remove_layer
 import numpy as np
 import os
 import sys
@@ -18,30 +18,42 @@ parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fc
 parser.add_argument("--vacuum", default=7.0, help="length of vacuum layer")
 parser.add_argument("--symbol2", default="Rh", help="second element for alloy")
 parser.add_argument("--max_replace_percent", default=100, help="max percent of second element")
+parser.add_argument("--cif", default=None)
 
 args = parser.parse_args()
+
+cif = args.cif
 num_data = args.num
 check    = args.check
 element  = args.symbol
 surf_geom = args.surf_geom
-vac = args.vacuum
+vacuum = args.vacuum
 elem2 = args.symbol2
 max_rep = float(args.max_replace_percent)
 
-# lattice constant
-lattice_const = {"Ru": 2.7*1.4, "Pt": 3.9, "Ni": 3.5}
-elem = {"symbol": element, "a": lattice_const[element]}
+# load base cif
+if cif is not None:
+    bulk = read(cif)
+    surf = surface(bulk, indices=[1, 0, 0], layers=3, vacuum=vacuum)
+    surf = surf*[2, 2, 1]
+else:
+    # lattice constant
+    lattice_const = {"Ru": 2.7*1.4, "Pt": 3.9, "Ni": 3.5}
+    elem = {"symbol": element, "a": lattice_const[element]}
 
-if surf_geom == "fcc111":
-    nlayer = 3
-    surf = fcc111(symbol=elem["symbol"], size=[4, 4, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
-elif surf_geom == "step_fcc":
-    nlayer = 4
-    surf = fcc211(symbol=elem["symbol"], size=[6, 3, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
-elif surf_geom == "step_hcp":
-    nlayer = 4
-    surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vac, orthogonal=True, periodic=True)
-    surf = make_step(surf)
+    if surf_geom == "fcc111":
+        nlayer = 3
+        surf = fcc111(symbol=elem["symbol"], size=[4, 4, nlayer], a=elem["a"], vacuum=vacuum,
+                      orthogonal=True, periodic=True)
+    elif surf_geom == "step_fcc":
+        nlayer = 4
+        surf = fcc211(symbol=elem["symbol"], size=[6, 3, nlayer], a=elem["a"], vacuum=vacuum,
+                      orthogonal=True, periodic=True)
+    elif surf_geom == "step_hcp":
+        nlayer = 4
+        surf = hcp0001(symbol=elem["symbol"], size=[4, 6, nlayer], a=elem["a"], vacuum=vacuum,
+                       orthogonal=True, periodic=True)
+        surf = make_step(surf)
 
 ## stepped non fcc
 #bulk = bulk(elem["symbol"], "fcc", a=elem["a"], cubic=True, orthorhombic=False)
@@ -49,7 +61,7 @@ elif surf_geom == "step_hcp":
 #surf = surface(bulk, indices=[1,1,1], layers=9, vacuum=vacuum)
 #surf = surf*[3,3,1]
 
-surf.translate([0, 0, -vac+1.0])
+surf.translate([0, 0, -vacuum+0.1])
 
 calc  = EMT()
 
@@ -73,10 +85,11 @@ elem2 = ["Pd"]
 random.seed(111)
 id = 1
 for i in range(num_data):
-    #
-    # make shuffled surface
-    #
     surf_copy = surf.copy()
+    surf_copy = remove_layer(atoms=surf_copy, symbol="O")
+    #
+    # make replaced surface
+    #
 
     # how many atoms to replace?
     if max_replace != 0:
@@ -84,8 +97,8 @@ for i in range(num_data):
     else:
         num_replace = 0
 
-    data = {}
     # replace element
+    data = {}
     for iatom in range(num_replace):
         surf_copy[iatom].symbol = random.choice(elem2)
 
@@ -93,8 +106,9 @@ for i in range(num_data):
     atomic_numbers = surf_copy.get_atomic_numbers()
     atomic_numbers = list(atomic_numbers)  # make non-numpy
 
-    # shuffle element atomic_numbers
-    np.random.shuffle(atomic_numbers)
+    if num_replace != 0:
+        # shuffle element atomic_numbers
+        np.random.shuffle(atomic_numbers)
 
     # set new element atomic_numbers
     surf_copy.set_atomic_numbers(atomic_numbers)

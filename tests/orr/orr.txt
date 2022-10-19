@@ -1,5 +1,0 @@
-O2 + surf --ads--> O2_fcc
-O2_fcc    --LH-->  OOH_fcc
-OOH_fcc   --LH-->  O_fcc + H2O
-O_fcc     --LH-->  OH_fcc
-OH_fcc    --LH-->  H2O + surf

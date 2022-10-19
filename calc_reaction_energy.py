@@ -127,19 +127,21 @@ def savefig_atoms(atoms, filename):
     fig.savefig(filename)
 
 
-# --------------------- end functions
+# --- main starts here
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--id", help="id for surface system")
+parser.add_argument("--unique_id", help="unique id for surface system")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
 parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
 parser.add_argument("--reac_json",  default="reaction_energy.json", help="file to write reaction energy")
 
 args = parser.parse_args()
-unique_id  = args.id
+unique_id  = args.unique_id
 calculator = args.calculator.lower()
 surf_json  = args.surf_json
 reac_json  = args.reac_json
+
+surf_json = os.path.join(os.getcwd(), surf_json)
 
 # whether to cleanup working directory for vasp
 clean = False
@@ -150,16 +152,18 @@ do_single_point = False
 # whether to keep cell shape (i.e. ISIF=4 or 7)
 keep_cell_shape = True  # False...gives erronous reaction energy
 # whether to check coordinate by view
-check = False
+check_surf_only = False
+check_all = True
 # whether to optimize unit cell
 optimize_unitcell = False
 
-reactionfile = "nh3.txt"
-#reactionfile = "orr.txt"
+#reactionfile = "nh3.txt"
+reactionfile = "oer.txt"
 
 # workdir to store vasp data
 #workdir = "/work/a_ishi/"
-workdir = "/home/a_ishi/dft_gan/work/"
+#workdir = "/home/a_ishi/dft_gan/work/"
+workdir = "work"
 
 # temprary database to avoid overlapping calculations
 tmpdbfile = "tmp.db"
@@ -167,8 +171,9 @@ tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
 tmpdb = connect(tmpdbfile)
 
 # molecule collection from ase
-data_json  = "g2.json"
-collection = connect(os.path.join(os.getcwd(), "data", data_json))
+data_path  = os.path.abspath("../../data")
+data_json  = "g2plus.json"
+collection = connect(os.path.join(data_path, data_json))
 
 if not os.path.isfile(reac_json):
     # reac_json does not exist -- make
@@ -179,7 +184,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 150  # maximum number of geomtry optimization steps
+steps = 100  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
@@ -211,14 +216,15 @@ if "vasp" in calculator:
     ldipol = True
     idipol = 3
 
-    calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
-                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1], kgamma=True, ispin=ispin, pp=pp,
-                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=0,
-                     sigma=sigma, lorbit=lorbit)
-    calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg, ibrion=ibrion,
-                     potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts, kgamma=kgamma, ispin=ispin, pp=pp,
-                     npar=npar, nsim=nsim, isym=isym, lreal=lreal, lwave=lwave, lcharg=lcharg, ismear=ismear,
-                     sigma=sigma, lorbit=lorbit, ldipol=ldipol, idipol=idipol)
+    calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg,
+                     ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1],
+                     kgamma=True, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+                     lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
+    calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg,
+                     ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts,
+                     kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+                     lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit,
+                     ldipol=ldipol, idipol=idipol)
 
 elif "emt" in calculator:
     calc_mol  = EMT()
@@ -308,8 +314,9 @@ for irxn in range(rxn_num):
                     #offset = (0.50, 0.50)  # for stepped hcp
                     height = height0 + 0.2
                 elif site == "fcc":
-                    offset = (0.33, 0.33)  # for [2, 2] supercell
+                    #offset = (0.33, 0.33)  # for [2, 2] supercell
                     #offset = (0.20, 0.20)  # for [3, 3] supercell
+                    offset = (0.25, 0.25)  # for PtO2
                     #offset = (0.22, 0.32)  # for stepped fcc
                     #offset = (0.50, 0.57)  # for stepped hcp...x and y cannot be rotated
                     height = height0
@@ -366,6 +373,9 @@ for irxn in range(rxn_num):
                 dir = workdir + unique_id + "_" + formula
                 set_calculator_with_directory(atoms, calc, directory=dir)
 
+                if check_all:
+                    view(atoms)
+
                 if do_single_point:
                     # geometry optimization + single point energy calculation
                     sys.stdout.flush()
@@ -412,7 +422,9 @@ for irxn in range(rxn_num):
     #
     # done
     #
-if check: view(surf)
+
+if check_surf_only:
+    view(surf)
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
