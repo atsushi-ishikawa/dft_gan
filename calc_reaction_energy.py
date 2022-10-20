@@ -141,19 +141,25 @@ calculator = args.calculator.lower()
 surf_json  = args.surf_json
 reac_json  = args.reac_json
 
-surf_json = os.path.join(os.getcwd(), surf_json)
+submitdir = os.getcwd()
+surf_json = os.path.join(submitdir, surf_json)
 
 # whether to cleanup working directory for vasp
 clean = False
+
 # save figures for structure
 savefig = False
+
 # whether to do sigle point energy calculation after geometry optimization
 do_single_point = False
+
 # whether to keep cell shape (i.e. ISIF=4 or 7)
 keep_cell_shape = True  # False...gives erronous reaction energy
+
 # whether to check coordinate by view
 check_surf_only = False
-check_all = True
+check_all = False
+
 # whether to optimize unit cell
 optimize_unitcell = False
 
@@ -167,7 +173,7 @@ workdir = "work"
 
 # temprary database to avoid overlapping calculations
 tmpdbfile = "tmp.db"
-tmpdbfile = os.path.join(os.getcwd(), tmpdbfile)
+tmpdbfile = os.path.join(submitdir, tmpdbfile)
 tmpdb = connect(tmpdbfile)
 
 # molecule collection from ase
@@ -184,7 +190,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 100  # maximum number of geomtry optimization steps
+steps = 10  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
@@ -300,7 +306,7 @@ for irxn in range(rxn_num):
                 id_ = collection.get(name=mol[0]).id
                 adsorbate = collection.get_atoms(id=id_)
                 adsorbate.rotate(180, "y")
-                height0 = 1.5  # 1.3
+                height0 = 1.6  # 1.3
                 if site == "atop":
                     offset = (0.50, 0.50)  # for [2, 2] supercell
                     #offset = (0.33, 0.33)  # for [3, 3] supercell
@@ -370,7 +376,7 @@ for irxn in range(rxn_num):
                     calc  = calc_surf
                     optimize_unitcell = False  # do not do cell optimization for adsorbed case
 
-                dir = workdir + unique_id + "_" + formula
+                dir = workdir + "/" + unique_id + "_" + formula
                 set_calculator_with_directory(atoms, calc, directory=dir)
 
                 if check_all:
@@ -388,8 +394,15 @@ for irxn in range(rxn_num):
                     en, atoms = run_optimizer(atoms,  steps=steps, optimize_unitcell=optimize_unitcell,
                                               keep_cell_shape=keep_cell_shape)
 
-                if savefig and mol_type == "adsorbed":
-                    savefig_atoms(atoms, "{0:s}_{1:02d}_{2:02d}.png".format(dir, irxn, imol))
+                file_prefix = os.path.join(submitdir, "{0:s}_{1:02d}_{2:02d}".format(formula, irxn, imol))
+
+                # keep vasprun.xml
+                os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
+
+                #if savefig and mol_type == "adsorbed":
+                if savefig:
+                    savefig_atoms(atoms, filename = file_prefix + ".png")
+
                 if clean and "vasp" in calculator:
                     shutil.rmtree(dir)
 
@@ -428,3 +441,4 @@ if check_surf_only:
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
+

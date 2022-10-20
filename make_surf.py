@@ -34,7 +34,7 @@ max_rep = float(args.max_replace_percent)
 # load base cif
 if cif is not None:
     bulk = read(cif)
-    surf = surface(bulk, indices=[1, 0, 0], layers=3, vacuum=vacuum)
+    surf = surface(bulk, indices=[1, 0, 0], layers=3, vacuum=vacuum, periodic=True)
     surf = surf*[2, 2, 1]
 else:
     # lattice constant
