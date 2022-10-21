@@ -397,11 +397,12 @@ for irxn in range(rxn_num):
                 file_prefix = os.path.join(submitdir, "{0:s}_{1:02d}_{2:02d}".format(formula, irxn, imol))
 
                 # keep vasprun.xml
-                os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
+                if "vasp" in calculator:
+                    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
 
                 #if savefig and mol_type == "adsorbed":
                 if savefig:
-                    savefig_atoms(atoms, filename = file_prefix + ".png")
+                    savefig_atoms(atoms, filename=file_prefix + ".png")
 
                 if clean and "vasp" in calculator:
                     shutil.rmtree(dir)
@@ -441,4 +442,3 @@ if check_surf_only:
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(reac_json, data)
-
