@@ -133,13 +133,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--unique_id", help="unique id for surface system")
 parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp", "VASP"])
 parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
-parser.add_argument("--reac_json",  default="reaction_energy.json", help="file to write reaction energy")
+parser.add_argument("--deltaE_json",  default="reaction_energy.json", help="file to write reaction energy")
+parser.add_argument("--reactionfile", default="nh3.txt", help="reaction string file")
 
 args = parser.parse_args()
-unique_id  = args.unique_id
-calculator = args.calculator.lower()
-surf_json  = args.surf_json
-reac_json  = args.reac_json
+unique_id    = args.unique_id
+calculator   = args.calculator.lower()
+surf_json    = args.surf_json
+deltaE_json  = args.deltaE_json
+reactionfile = args.reactionfile
 
 submitdir = os.getcwd()
 surf_json = os.path.join(submitdir, surf_json)
@@ -163,9 +165,6 @@ check_all = False
 # whether to optimize unit cell
 optimize_unitcell = False
 
-#reactionfile = "nh3.txt"
-reactionfile = "oer.txt"
-
 # workdir to store vasp data
 #workdir = "/work/a_ishi/"
 #workdir = "/home/a_ishi/dft_gan/work/"
@@ -177,25 +176,25 @@ tmpdbfile = os.path.join(submitdir, tmpdbfile)
 tmpdb = connect(tmpdbfile)
 
 # molecule collection from ase
-data_path  = os.path.abspath("../../data")
+data_path  = os.path.join(os.environ["HOME"], "dft_gan/data")
 data_json  = "g2plus.json"
 collection = connect(os.path.join(data_path, data_json))
 
-if not os.path.isfile(reac_json):
-    # reac_json does not exist -- make
-    with open(reac_json, "w") as f:
+if not os.path.isfile(deltaE_json):
+    # json file does not exist -- make
+    with open(deltaE_json, "w") as f:
         f.write(json.dumps([], indent=4))
 
 print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 10  # maximum number of geomtry optimization steps
+steps = 20  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
     encut  = 400
-    xc     = "beef-vdw"
+    xc     = "rpbe"
     ivdw   = 0
     nsw    = 0  # steps
     nelm   = 30
@@ -246,7 +245,7 @@ rxn_num = get_number_of_reaction(reactionfile)
 surf = db.get_atoms(unique_id=unique_id).copy()
 
 try:
-    df_reac = pd.read_json(reac_json)
+    df_reac = pd.read_json(deltaE_json)
     df_reac = df_reac.set_index("unique_id")
 except:
     # blanck json file --- going
@@ -284,7 +283,6 @@ for irxn in range(rxn_num):
             if mol[0] == "surf":
                 molecule = mol[0]
             else:
-                #molecule = collection[mol[0]]
                 id_ = collection.get(name=mol[0]).id
                 molecule = collection.get_atoms(id=id_)
 
@@ -302,7 +300,6 @@ for irxn in range(rxn_num):
  
             elif mol_type == "adsorbed":
                 # adsorbate calculation
-                # adsorbate = collection[mol[0]]
                 id_ = collection.get(name=mol[0]).id
                 adsorbate = collection.get_atoms(id=id_)
                 adsorbate.rotate(180, "y")
@@ -397,7 +394,8 @@ for irxn in range(rxn_num):
                 file_prefix = os.path.join(submitdir, "{0:s}_{1:02d}_{2:02d}".format(formula, irxn, imol))
 
                 # keep vasprun.xml
-                os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
+                if "vasp" in calculator:
+               	    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
 
                 #if savefig and mol_type == "adsorbed":
                 if savefig:
@@ -440,5 +438,5 @@ if check_surf_only:
     view(surf)
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
-add_to_json(reac_json, data)
+add_to_json(deltaE_json, data)
 
