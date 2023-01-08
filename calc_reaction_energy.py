@@ -396,10 +396,11 @@ for irxn in range(rxn_num):
                 # keep vasprun.xml
                 if "vasp" in calculator:
                	    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
+                    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
 
                 #if savefig and mol_type == "adsorbed":
                 if savefig:
-                    savefig_atoms(atoms, filename = file_prefix + ".png")
+                    savefig_atoms(atoms, filename=file_prefix + ".png")
 
                 if clean and "vasp" in calculator:
                     shutil.rmtree(dir)

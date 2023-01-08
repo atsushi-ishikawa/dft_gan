@@ -1,6 +1,8 @@
-def ABcoord(mol, A, B):
-    import numpy as np
+from ase import Atoms
+import numpy as np
 
+
+def ABcoord(mol, A, B):
     symbols = np.array(mol.get_chemical_symbols())
     A_idx   = np.where(symbols == A)[0]
     B_list  = np.where(symbols == B)[0]
@@ -116,9 +118,6 @@ def delete_num_from_json(num, jsonfile):
 
 
 def sort_atoms_by(atoms, xyz="x"):
-    from ase import Atoms, Atom
-    import numpy as np
-
     # keep information for original Atoms
     tags = atoms.get_tags()
     pbc  = atoms.get_pbc()
@@ -154,35 +153,20 @@ def sort_atoms_by(atoms, xyz="x"):
     return newatoms
 
 
-#def fix_lower_surface(atoms, nlayer, nrelax):
-#    import numpy as np
-#    from ase.constraints import FixAtoms
-#
-#    newatoms = sort_atoms_by_z(atoms)
-#    natoms   = len(newatoms.get_atomic_numbers())
-#    one_surf = natoms // nlayer
-#    tag = np.ones(natoms, int)
-#    for i in range(natoms-1, natoms-nrelax*one_surf-1, -1):
-#        tag[i] = 0
-#    newatoms.set_tags(tag)
-#    c = FixAtoms(indices=[atom.index for atom in newatoms if atom.tag == 1])
-#    newatoms.set_constraint(c)
-#    return newatoms
-
-
 def get_number_of_layers(atoms):
-    import numpy as np
+    symbols = list(set(atoms.get_chemical_symbols()))
+    nlayers = []
 
-    pos    = atoms.positions
-    zpos   = np.round(pos[:, 2], decimals=5)
-    nlayer = len(list(set(zpos)))
+    for symbol in symbols:
+        subatoms = Atoms(list(filter(lambda x: x.symbol == symbol, atoms)))
+        pos  = subatoms.positions
+        zpos = np.round(pos[:, 2], decimals=4)
+        nlayers.append(len(list(set(zpos))))
 
-    return nlayer
+    return nlayers
 
 
 def set_tags_by_z(atoms):
-    from ase import Atoms
-    import numpy as np
     import pandas as pd
 
     pbc  = atoms.get_pbc()
@@ -216,8 +200,6 @@ def set_tags_by_z(atoms):
     return newatoms
 
 def remove_layer(atoms=None, symbol=None, higher=1):
-    from ase import Atoms
-    import numpy as np
     import pandas as pd
     from ase.constraints import FixAtoms
 
@@ -250,7 +232,6 @@ def remove_layer(atoms=None, symbol=None, higher=1):
     return newatoms
 
 def fix_lower_surface(atoms):
-    import numpy as np
     import pandas as pd
     from ase.constraints import FixAtoms
 
@@ -263,9 +244,13 @@ def fix_lower_surface(atoms):
     newatoms = set_tags_by_z(newatoms)
 
     # constraint
-    nlayer = get_number_of_layers(newatoms)
-    lower  = list(range(nlayer//2))
-    c = FixAtoms(indices=[iatom.index for iatom in newatoms if iatom.tag in lower])
+    symbols = list(set(atoms.get_chemical_symbols()))
+    nlayers = get_number_of_layers(newatoms)
+    for i, _ in enumerate(symbols):
+        fixlayers = nlayers[i]//2 + 1
+        lower = list(range(fixlayers))
+        c = FixAtoms(indices=[iatom.index for iatom in newatoms if iatom.tag in lower])
+
     newatoms.set_constraint(c)
 
     return newatoms
@@ -285,7 +270,6 @@ def find_highest(json, score):
 
 
 def make_step(atoms):
-    import numpy as np
     from ase.build import rotate
 
     newatoms = atoms.copy()
@@ -309,8 +293,6 @@ def make_step(atoms):
 
 
 def mirror_invert(atoms, direction="x"):
-    import numpy as np
-
     pos  = atoms.get_positions()
     cell = atoms.cell
 
