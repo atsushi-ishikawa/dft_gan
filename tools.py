@@ -220,7 +220,7 @@ def remove_layer(atoms=None, symbol=None, higher=1):
     maxtag = max(list(tags))
 
     for i, atom in enumerate(atoms_copy):
-        if atom.tag == maxtag - higher + 1 and atom.symbol == symbol:
+        if atom.tag >= maxtag - higher + 1 and atom.symbol == symbol:
             # remove this atom
             next
         else:

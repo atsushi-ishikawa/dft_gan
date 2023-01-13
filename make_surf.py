@@ -34,7 +34,7 @@ max_rep = float(args.max_replace_percent)
 # load base cif
 if cif is not None:
     bulk = read(cif)
-    surf = surface(bulk, indices=[1, 0, 0], layers=3, vacuum=vacuum, periodic=True)
+    surf = surface(bulk, indices=[1, 1, 0], layers=4, vacuum=vacuum, periodic=True)
     surf = surf*[2, 2, 1]
 else:
     # lattice constant
@@ -62,9 +62,14 @@ else:
 #surf = surf*[3,3,1]
 
 surf.translate([0, 0, -vacuum+0.1])
+surf.wrap()
 
 calc  = EMT()
 
+# fake replacement of Ru --> Pt to use EMT
+for iatom in surf:
+    if iatom.symbol == "Ru":
+        iatom.symbol = "Pt"
 
 outjson = "surf.json"
 # remove old one
@@ -83,10 +88,11 @@ elem2 = ["Pd"]
 # elem2 = ["Ru"]
 
 random.seed(111)
+data = {}
 id = 1
 for i in range(num_data):
     surf_copy = surf.copy()
-    surf_copy = remove_layer(atoms=surf_copy, symbol="O")
+    surf_copy = remove_layer(atoms=surf_copy, symbol="O", higher=2)
     #
     # make replaced surface
     #
@@ -98,20 +104,20 @@ for i in range(num_data):
         num_replace = 0
 
     # replace element
-    data = {}
-    for iatom in range(num_replace):
+    from_list = []
+    for iatom in surf_copy:
+        if iatom.symbol != "O":
+            from_list.append(iatom.index)
+
+    from_list = random.sample(from_list, num_replace)
+
+    for iatom in from_list:
         surf_copy[iatom].symbol = random.choice(elem2)
 
     # get element atomic_numbers
     atomic_numbers = surf_copy.get_atomic_numbers()
     atomic_numbers = list(atomic_numbers)  # make non-numpy
 
-    if num_replace != 0:
-        # shuffle element atomic_numbers
-        np.random.shuffle(atomic_numbers)
-
-    # set new element atomic_numbers
-    surf_copy.set_atomic_numbers(atomic_numbers)
     formula = surf_copy.get_chemical_formula()
 
     surf_copy.set_calculator(calc)
@@ -122,3 +128,4 @@ for i in range(num_data):
     db.write(surf_copy, data=data)
     write("POSCAR", surf_copy)
     id += 1
+

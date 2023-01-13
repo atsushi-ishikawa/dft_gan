@@ -160,7 +160,7 @@ keep_cell_shape = True  # False...gives erronous reaction energy
 
 # whether to check coordinate by view
 check_surf_only = False
-check_all = False
+check_all = True
 
 # whether to optimize unit cell
 optimize_unitcell = False
@@ -263,6 +263,7 @@ if unique_id in df_reac.index:
 deltaE = np.array([])
 
 print(" --- calculating %s ---" % surf.get_chemical_formula())
+
 for irxn in range(rxn_num):
     print("irxn = %d" % irxn)
 
@@ -327,7 +328,7 @@ for irxn in range(rxn_num):
                     offset = (0.50, 0.50)
                     height = height0
 
-                # get surface part from tmpdb
+                # get surf part from tmpdb of ads + surf case, as it should be done beforehand
                 surf_formula = surf.get_chemical_formula()
                 name  = surf_formula + "gas" + unique_id
                 past  = tmpdb.get(name=name)
