@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ### preparation 
-surf_json="surf.json"
+#surf_json="surf.json"
 numdata=$1
 todolist="todolist.txt"
 
@@ -11,4 +11,3 @@ rm -rf ./log 2> /dev/null
 
 python make_surf.py $numdata
 python make_todo_list.py
-

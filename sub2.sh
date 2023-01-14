@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cpu_team="whisky" # ("whisky | "vodka" | "mio" | "mio02")
+cpu_team="whisky"  # ("whisky | "vodka" | "mio" | "mio02")
 dir=${HOME}/ase/nn_reac2/
 host=`hostname`
 
@@ -36,4 +36,3 @@ fi
 
 rm doing_GAN 2> /dev/null
 touch doing_reaction_energy_calc
-

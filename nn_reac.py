@@ -12,6 +12,7 @@ import h5py
 import numpy as np
 import argparse
 
+fix_element_number = 8  # oxygen
 #
 # functions
 #
@@ -255,6 +256,10 @@ def make_atomic_numbers(inputlist, oldlist):
             oldlist.append(ilist)
 
     return newlist
+
+def make_replace_atom_list(inlist):
+    outlist = list(filter(lambda x: x != fix_element_number, inlist))
+    return outlist
 #
 # main program starts here
 #
@@ -348,16 +353,8 @@ df["rank"] = rank
 print(df[df["rank"] == nclass-1])
 print(df[df["rank"] == 0])
 
-fix_element_number = 8
-df_tmp = pd.DataFrame(dtype=int)
-for i in range(len(df)):
-    original = df.iloc[i]["atomic_numbers"]
-    replace  = [list(filter(lambda x: x != fix_element_number, original))]
-    df_tmp   = pd.concat([df_tmp, pd.Series(replace)], axis=0)
-
-df_tmp.columns = ["atomic_numbers_replace"]
-df_tmp.index = df.index
-df = pd.concat([df, df_tmp], axis=1)
+# Extract atomic numbers to replace, by removing atoms to fix.
+df["atomic_numbers_replace"] = df["atomic_numbers"].apply(make_replace_atom_list)
 
 dataloader = make_dataloader(x=df["atomic_numbers_replace"], y=df["rank"], batch_size=batch_size)
 

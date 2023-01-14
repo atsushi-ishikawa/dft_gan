@@ -43,9 +43,9 @@ fi
 nline=`cat $todolist | wc -l`
 
 if $use_queue && [ $nline -ge $max_sub ]; then
-	max=$max_sub
+	max_num=$max_sub
 else
-	max=$nline
+	max_num=$nline
 fi
 
 #
@@ -57,7 +57,7 @@ rm stdout* stderr* 2> /dev/null
 rm $submit_shell*.{e,o}[0-9]* 2> /dev/null
 rm $tmpdb 2> /dev/null
 
-for ((i=0; i<$max; i++)); do
+for ((i=0; i<$max_num; i++)); do
 	#
 	# extract id from todlist and delete it
 	#
