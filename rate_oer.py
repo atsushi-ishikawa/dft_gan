@@ -9,7 +9,8 @@ import math
 np.set_printoptions(precision=3)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading rxn. energy and writing rate")
+parser.add_argument("--reac_json", default="reaction_energy.json",
+                                   help="json for reading reaction energy and writing rate")
 
 args = parser.parse_args()
 reac_json = args.reac_json
@@ -22,8 +23,8 @@ kJtoeV = 1/98.415
 kB = 8.617e-5  # eV/K
 RT = 8.314*1.0e-3*T*kJtoeV  # J/K -> kJ/K * K -> eV
 
-gas = {"H2O": 0, "H2":1}
-ads = {"OH" : 0, "O":1, "OOH": 2, "vac": 3}
+gas = {"H2O": 0, "H2": 1}
+ads = {"OH": 0, "O": 1, "OOH": 2, "vac": 3}
 
 # --------------------------
 reactionfile = "oer.txt"
@@ -44,8 +45,8 @@ deltaZPE[1] = -0.258  # H2
 # thermal correction (translation + rotation) in eV
 # loss in each elementary reaction
 deltaTherm    = np.zeros(rxn_num)
-deltaTherm[0] = -(3/2)*RT - RT # N2
-deltaTherm[1] = -(3/2)*RT - RT # H2
+deltaTherm[0] = -(3/2)*RT - RT  # N2
+deltaTherm[1] = -(3/2)*RT - RT  # H2
 
 # pressure correction i.e. deltaG = deltaG^0 + RT*ln(p/p0)
 # loss in each elementary reaction
@@ -58,40 +59,39 @@ df_reac  = df_reac.set_index("unique_id")
 num_data = len(df_reac)
 
 for id in range(num_data):
-	#if "rate" in df_reac.iloc[id].index:
-	# already calculated
-	#	pass
-	if isinstance(df_reac.iloc[id].reaction_energy, list):
-		unique_id = df_reac.iloc[id].name
-		deltaE  = df_reac.iloc[id].reaction_energy
-		deltaE  = np.array(deltaE)
-		eta = np.max(deltaE)  # overpotential
+    #if "rate" in df_reac.iloc[id].index:
+    # already calculated
+    #	pass
+    if isinstance(df_reac.iloc[id].reaction_energy, list):
+        unique_id = df_reac.iloc[id].name
+        deltaE  = df_reac.iloc[id].reaction_energy
+        deltaE  = np.array(deltaE)
+        eta = np.max(deltaE)  # overpotential
 
-		deltaH  = deltaE + deltaZPE + deltaTherm
+        deltaH  = deltaE + deltaZPE + deltaTherm
 
-		deltaG  = deltaH - T*deltaS
-		deltaG += RTlnP
+        deltaG  = deltaH - T*deltaS
+        deltaG += RTlnP
 
-		K = np.exp(-deltaG/(kB*T))
+        K = np.exp(-deltaG/(kB*T))
 
-		score = -eta  # smaller is better
+        score = -eta  # smaller is better
 
-		data = {"unique_id": unique_id, "reaction_energy": list(deltaE), 
-				"gibbs_energy": list(deltaG), "temperature": T, "total_pressure": ptot,
-				"species": list(ads.keys()), "score": score}
+        data = {"unique_id": unique_id, "reaction_energy": list(deltaE),
+                "gibbs_energy": list(deltaG), "temperature": T, "total_pressure": ptot,
+                "species": list(ads.keys()), "score": score}
 
-		# add to json
-		with open(reac_json, "r") as f:
-			datum = json.load(f)
-			for i in range(len(datum)):
-				if datum[i]["unique_id"] == unique_id:
-					datum.pop(i)
-					break
+        # add to json
+        with open(reac_json, "r") as f:
+            datum = json.load(f)
+            for i in range(len(datum)):
+                if datum[i]["unique_id"] == unique_id:
+                    datum.pop(i)
+                    break
 
-			datum.append(data)
-			with open(reac_json, "w") as f:
-				json.dump(datum, f, indent=4)
+            datum.append(data)
+            with open(reac_json, "w") as file:
+                json.dump(datum, file, indent=4)
 
-	else:
-		print("reaction energy not available")
-
+    else:
+        print("reaction energy not available")

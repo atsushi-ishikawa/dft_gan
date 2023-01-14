@@ -155,6 +155,7 @@ def sort_atoms_by(atoms, xyz="x"):
 
 def get_number_of_layers(atoms):
     symbols = list(set(atoms.get_chemical_symbols()))
+    symbols = sorted(symbols)
     nlayers = []
 
     for symbol in symbols:
@@ -174,6 +175,7 @@ def set_tags_by_z(atoms):
 
     newatoms = Atoms()
     symbols = list(set(atoms.get_chemical_symbols()))
+    symbols = sorted(symbols)
 
     for symbol in symbols:
         subatoms = Atoms(list(filter(lambda x: x.symbol == symbol, atoms)))
@@ -222,7 +224,7 @@ def remove_layer(atoms=None, symbol=None, higher=1):
     for i, atom in enumerate(atoms_copy):
         if atom.tag >= maxtag - higher + 1 and atom.symbol == symbol:
             # remove this atom
-            next
+            pass
         else:
             newatoms += atom
 
@@ -234,6 +236,7 @@ def remove_layer(atoms=None, symbol=None, higher=1):
 def fix_lower_surface(atoms):
     import pandas as pd
     from ase.constraints import FixAtoms
+    from ase.visualize import view
 
     newatoms = atoms.copy()
 
@@ -243,13 +246,39 @@ def fix_lower_surface(atoms):
     # set tags
     newatoms = set_tags_by_z(newatoms)
 
-    # constraint
-    symbols = list(set(atoms.get_chemical_symbols()))
+    ### constraint
+
+    # prepare symbol dict
+    symbols_ = list(set(atoms.get_chemical_symbols()))
+    symbols_ = sorted(symbols_)
+    symbols = {}
+    for i, sym in enumerate(symbols_):
+        symbols.update({sym: i})
+
+    # Determine fixlayer, which is a list of elements. Half of nlayers.
     nlayers = get_number_of_layers(newatoms)
-    for i, _ in enumerate(symbols):
-        fixlayers = nlayers[i]//2 + 1
-        lower = list(range(fixlayers))
-        c = FixAtoms(indices=[iatom.index for iatom in newatoms if iatom.tag in lower])
+    div = [i // 2 for i in nlayers]
+    mod = [i % 2 for i in nlayers]
+    fixlayers = [i+j for (i, j) in zip(div, mod)]
+
+    # list of fixed atoms
+    fixlist = []
+    tags = newatoms.get_tags()
+    minind = np.argmin(tags)
+    maxind = np.argmax(tags)
+    lowest_z  = newatoms[minind].position[2]
+    highest_z = newatoms[maxind].position[2]
+    z_thre = (highest_z - lowest_z) / 2
+
+    for iatom in newatoms:
+        ind = symbols[iatom.symbol]
+        z_pos = iatom.position[2]
+        if iatom.tag < fixlayers[ind] and z_pos < z_thre:
+            fixlist.append(iatom.index)
+        else:
+            pass
+
+    c = FixAtoms(indices=fixlist)
 
     newatoms.set_constraint(c)
 

@@ -12,95 +12,9 @@ import h5py
 import numpy as np
 import argparse
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device is %s" % device)
-
-# set random number seed
-seed = 0
-torch.manual_seed(seed)
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
-parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
-parser.add_argument("--loss_file", default="loss.h5", help="file for generator and descriminator losses")
-parser.add_argument("--method", default="gan", help="fake sample generation method", choices=["gan", "random"])
-
-args = parser.parse_args()
-surf_json = args.surf_json
-reac_json = args.reac_json
-loss_file = args.loss_file
-method = args.method
-
-if not os.path.exists(loss_file):
-    # prepare loss h5 file if not exits
-    h5file = h5py.File(loss_file, "w")
-    h5file.create_dataset("epoch", (1,),  maxshape=(None, ), chunks=True, dtype="int")
-    h5file.create_dataset("D_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
-    h5file.create_dataset("G_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
-    h5file.flush()
-    h5file.close()
-
 #
-# load data and put it to DataFrame
+# functions
 #
-df1 = load_ase_json(surf_json)
-df2 = pd.read_json(reac_json)
-
-df1 = df1.set_index("unique_id")
-df2 = df2.set_index("unique_id")
-df  = pd.concat([df1, df2], axis=1)
-df  = df.sort_values("score", ascending=False)
-
-print("best score:",  df.iloc[0]["score"])
-print("worst score:", df.iloc[-1]["score"])
-#
-# droping NaN in atomic numbers and score
-#
-df = df.dropna(subset=["atomic_numbers"])
-df = df.dropna(subset=["score"])
-numdata = len(df)
-#
-# parameters
-#
-numuse     = int(numdata * 1.0)
-nclass     = 5
-#nclass     = 10
-if method == "random":
-    num_epoch  = 1
-else:
-    num_epoch  = 2000 # 2000 is better than 1000
-printnum   = 200
-batch_size = numdata//5  # from experience
-z_dim = 100
-lr = 1.0e-3
-b1 = 0.5
-b2 = 0.999
-dropoutrate = 0.3
-
-scaler_selection = "minmax"
-#scaler_selection = "standard"
-
-if scaler_selection == "minmax":
-    scaler  = MinMaxScaler()  # makes (0,1) for binary system
-else:
-    scaler  = StandardScaler()
-
-#
-# make logdir if not exists
-#
-log_dir  = "./log"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-#
-# divide into groups according to score
-# group with highest score = nclass-1, lowest score = 0
-#
-rank = pd.qcut(df["score"], nclass, labels=False)
-df["rank"] = rank
-
-print(df[df["rank"]==nclass-1])
-print(df[df["rank"]==0])
-
 def make_dataloader(x=None, y=None, batch_size=10):
     import numpy as np
     import torch
@@ -120,15 +34,6 @@ def make_dataloader(x=None, y=None, batch_size=10):
 
     return dataloader
 
-
-dataloader = make_dataloader(x=df["atomic_numbers"], y=df["rank"], batch_size=batch_size)
-
-nchannel = 64
-nstride  = 3
-natom = len(df.iloc[0]["atomic_numbers"])
-nrun  = df["run"].max()
-
-
 class Discriminator(nn.Module):
     #
     # returns one (stable structure) or zero (unstable structure)
@@ -141,13 +46,13 @@ class Discriminator(nn.Module):
             nn.Linear((1 + nclass)*natom, 2*nchannel),
             nn.BatchNorm1d(2*nchannel),  # need
             nn.LeakyReLU(0.2),  # need
-            nn.Dropout(dropoutrate), # test
+            nn.Dropout(dropoutrate),  # test
 
             #nn.utils.spectral_norm(nn.Linear((1 + nclass) * natom, 2*nchannel)), # test
             nn.Linear(2*nchannel, 2*nchannel),
             nn.BatchNorm1d(2 * nchannel),  # need
             nn.LeakyReLU(0.2),  # need
-            nn.Dropout(dropoutrate), # test
+            nn.Dropout(dropoutrate),  # test
 
             nn.Linear(2*nchannel, 1),
 
@@ -159,7 +64,6 @@ class Discriminator(nn.Module):
         x = x.view(batch_size, -1)
         x = self.fc(x)
         return x
-
 
 class Generator(nn.Module):
     #
@@ -193,7 +97,6 @@ class Generator(nn.Module):
         x = x.view(batch_size, -1, 1)  # need to be 3D to include label information
         return x
 
-
 def load_checkpoint(model, optimizer, filename, device):
     if os.path.isfile(filename):
         print("=> loading checkpoint '{}'".format(filename))
@@ -203,11 +106,9 @@ def load_checkpoint(model, optimizer, filename, device):
     else:
         print("no checkpoint found")
 
-
 def onehot_encode(label, nclass, device):
     eye = torch.eye(nclass, device=device)
     return eye[label].view(-1, nclass, 1)
-
 
 def concat_vector_label(vector, label, nclass, device):
     N, C, L = vector.shape
@@ -216,25 +117,6 @@ def concat_vector_label(vector, label, nclass, device):
     oh_label = oh_label.expand(N, nclass, C)
     result = torch.cat((vector, oh_label), dim=1)
     return result
-
-
-criterion = nn.MSELoss()
-#
-# define model and optimizer
-#
-D = Discriminator().to(device)
-G = Generator().to(device)
-
-D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(b1, b2))
-G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(b1, b2))
-#
-# load state
-#
-D_file = os.path.join(log_dir, "D_last.pth")
-G_file = os.path.join(log_dir, "G_last.pth")
-load_checkpoint(D, D_opt, D_file, device)
-load_checkpoint(G, G_opt, G_file, device)
-
 
 def train(D, G, criterion, D_opt, G_opt, dataloader):
     D.train()
@@ -301,7 +183,7 @@ def generate(G, target=0):
     fake = G(z_label)
     fake = fake.detach().cpu().numpy()
 
-    if scaler_selection=="minmax":
+    if scaler_selection == "minmax":
         fake = np.array(list(map(scaler2.fit_transform, fake)))  # convert to (0,1)
     else:
         fake = scaler.inverse_transform(fake)
@@ -330,7 +212,6 @@ def gan(num_epoch=100):
         f["D_loss"][-num_epoch:] = history["D_loss"]
         f["G_loss"][-num_epoch:] = history["G_loss"]
 
-
 def make_atomic_numbers(inputlist, oldlist):
     """
     Assuming atomic number sequence is transformed to (0,1).
@@ -343,8 +224,8 @@ def make_atomic_numbers(inputlist, oldlist):
     #elements = ["Ru", "Pt"]
     #elements = ["Ru", "Ni"]
     #elements = ["Ru", "Pd"]
-    elements = ["Ru", "Rh"]
-    #elements = ["Pd", "Pt"]
+    #elements = ["Ru", "Rh"]
+    elements = ["Pd", "Pt"]
 
     AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
     elements = list(map(lambda x: AN[x], elements))
@@ -357,9 +238,9 @@ def make_atomic_numbers(inputlist, oldlist):
     lists = inputlist.astype(int).tolist()  # float --> int --> python list
 
     if scaler_selection == "minmax":
-        lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], ilist)) for ilist in lists]
+        lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in lists]
     else:
-        lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], ilist)) for ilist in lists]
+        lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], i)) for i in lists]
 
     oldlist = oldlist.values.tolist()
     #
@@ -374,12 +255,137 @@ def make_atomic_numbers(inputlist, oldlist):
             oldlist.append(ilist)
 
     return newlist
+#
+# main program starts here
+#
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("device is %s" % device)
 
+# set random number seed
+seed = 0
+torch.manual_seed(seed)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
+parser.add_argument("--loss_file", default="loss.h5", help="file for generator and descriminator losses")
+parser.add_argument("--method", default="gan", help="sample generation method", choices=["gan", "random"])
+
+args = parser.parse_args()
+surf_json = args.surf_json
+reac_json = args.reac_json
+loss_file = args.loss_file
+method = args.method
+
+if not os.path.exists(loss_file):
+    # prepare loss h5 file if not exits
+    h5file = h5py.File(loss_file, "w")
+    h5file.create_dataset("epoch", (1,),  maxshape=(None, ), chunks=True, dtype="int")
+    h5file.create_dataset("D_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
+    h5file.create_dataset("G_loss", (1,), maxshape=(None, ), chunks=True, dtype="float")
+    h5file.flush()
+    h5file.close()
+
+#
+# load data and put it to DataFrame
+#
+df1 = load_ase_json(surf_json)
+df2 = pd.read_json(reac_json)
+
+df1 = df1.set_index("unique_id")
+df2 = df2.set_index("unique_id")
+df  = pd.concat([df1, df2], axis=1)
+df  = df.sort_values("score", ascending=False)
+
+print("best score:",  df.iloc[0]["score"])
+print("worst score:", df.iloc[-1]["score"])
+#
+# droping NaN in atomic numbers and score
+#
+df = df.dropna(subset=["atomic_numbers"])
+df = df.dropna(subset=["score"])
+numdata = len(df)
+#
+# parameters
+#
+numuse = int(numdata * 1.0)
+nclass = 5  # 10
+
+if method == "random":
+    num_epoch  = 1
+else:
+    num_epoch  = 1000  # 2000 is better than 1000
+
+printnum   = 200
+batch_size = numdata  # numdata//5  # from experience
+z_dim = 100
+lr = 1.0e-3
+b1 = 0.5
+b2 = 0.999
+dropoutrate = 0.3
+
+scaler_selection = "minmax"
+#scaler_selection = "standard"
+
+if scaler_selection == "minmax":
+    scaler  = MinMaxScaler()  # makes (0,1) for binary system
+else:
+    scaler  = StandardScaler()
+
+#
+# make logdir if not exists
+#
+log_dir  = "./log"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+#
+# divide into groups according to score
+# group with the highest score = nclass-1, lowest score = 0
+#
+rank = pd.qcut(df["score"], nclass, labels=False)
+df["rank"] = rank
+
+print(df[df["rank"] == nclass-1])
+print(df[df["rank"] == 0])
+
+fix_element_number = 8
+df_tmp = pd.DataFrame(dtype=int)
+for i in range(len(df)):
+    original = df.iloc[i]["atomic_numbers"]
+    replace  = [list(filter(lambda x: x != fix_element_number, original))]
+    df_tmp   = pd.concat([df_tmp, pd.Series(replace)], axis=0)
+
+df_tmp.columns = ["atomic_numbers_replace"]
+df_tmp.index = df.index
+df = pd.concat([df, df_tmp], axis=1)
+
+dataloader = make_dataloader(x=df["atomic_numbers_replace"], y=df["rank"], batch_size=batch_size)
+
+nchannel = 64
+nstride  = 3
+natom = len(df.iloc[0]["atomic_numbers_replace"])
+nrun  = df["run"].max()
+
+criterion = nn.MSELoss()
+#
+# define model and optimizer
+#
+D = Discriminator().to(device)
+G = Generator().to(device)
+
+D_opt = torch.optim.Adam(D.parameters(), lr=lr, betas=(b1, b2))
+G_opt = torch.optim.Adam(G.parameters(), lr=lr, betas=(b1, b2))
+#
+# load state
+#
+D_file = os.path.join(log_dir, "D_last.pth")
+G_file = os.path.join(log_dir, "G_last.pth")
+load_checkpoint(D, D_opt, D_file, device)
+load_checkpoint(G, G_opt, G_file, device)
 
 gan(num_epoch=num_epoch)
-#
+
 # save state
-#
 torch.save({"state_dict": D.state_dict(), "optimizer": D_opt.state_dict()}, D_file)
 torch.save({"state_dict": G.state_dict(), "optimizer": G_opt.state_dict()}, G_file)
 
@@ -390,7 +396,7 @@ if method == "gan":
         fakesystem.append(generate(G, target=target))
 
     target_class = nclass-1
-    samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers"])
+    samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers_replace"])
 
 else:
     # random -- for benchmarking
@@ -400,10 +406,11 @@ else:
         random = np.array(list(np.random.randint(0, 2, natom)))
         randoms[i] = random
 
-    samples = make_atomic_numbers(randoms, df["atomic_numbers"])
-#
+    samples = make_atomic_numbers(randoms, df["atomic_numbers_replace"])
+
+from ase.db import connect
+
 # Make fake examples: need some template -- should be fixed
-#
 vacuum = 7.0
 a = 2.7  # note: use same a with make_surf.py
 nlayer = 4
@@ -411,25 +418,33 @@ nlayer = 4
 #surf = fcc111(symbol="Au", size=[2, 2, 5], a=a, vacuum=vacuum)
 #surf = fcc111(symbol="Au", size=[3, 3, 4], a=a, vacuum=vacuum)
 #surf = fcc211(symbol="Au", size=[6, 3, 4], a=a, vacuum=vacuum)
-surf = hcp0001(symbol="Au", size=[4, 6, nlayer], a=a, vacuum=vacuum, orthogonal=True, periodic=True)  # stepped hcp
-surf = make_step(surf)
+#surf = hcp0001(symbol="Au", size=[4, 6, nlayer], a=a, vacuum=vacuum, orthogonal=True, periodic=True)
+#surf = make_step(surf)
+
+db = connect("surf.json")
+surf = db.get_atoms(id=1).copy()
 
 #surf.pbc = True
-surf.translate([0, 0, -vacuum+1.0])
+#surf.translate([0, 0, -vacuum+1.0])
 
-check = False
+check = True
 write = True
 db = connect(surf_json, type="json")  # add to existing file
+atomic_numbers_original = surf.get_atomic_numbers()
 
 for sample in samples:
-    surf.set_atomic_numbers(sample)
-    atomic_numbers = surf.get_atomic_numbers()
-    atomic_numbers = list(atomic_numbers)   # make non-numpy
+    atomic_numbers = []
+    for i, iatom in enumerate(atomic_numbers_original):
+        if iatom == fix_element_number:
+            atomic_numbers.append(fix_element_number)
+        else:
+            atomic_numbers.append(sample[i])
+
+    surf.set_atomic_numbers(atomic_numbers)
     formula = surf.get_chemical_formula()
 
-    print("formula: ", surf.get_chemical_formula())
     if check: view(surf)
-    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": nrun + 1}
+    data = {"chemical_formula": formula, "atomic_numbers": list(atomic_numbers), "run": nrun + 1}
     #
     # write candidate to file
     #

@@ -11,13 +11,13 @@ import random
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--num", default=1, help="number of surfaces generating")
+parser.add_argument("--num", default=1, type=int, help="number of surfaces generating")
 parser.add_argument("--check", action="store_true", help="check structure or not")
 parser.add_argument("--symbol", default="Pt", help="element")
 parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fcc", "step_hcp"])
 parser.add_argument("--vacuum", default=7.0, help="length of vacuum layer")
 parser.add_argument("--symbol2", default="Rh", help="second element for alloy")
-parser.add_argument("--max_replace_percent", default=100, help="max percent of second element")
+parser.add_argument("--max_replace_percent", default=100, type=int, help="max percent of second element")
 parser.add_argument("--cif", default=None)
 
 args = parser.parse_args()
@@ -128,4 +128,3 @@ for i in range(num_data):
     db.write(surf_copy, data=data)
     write("POSCAR", surf_copy)
     id += 1
-

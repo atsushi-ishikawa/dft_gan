@@ -146,7 +146,7 @@ reactionfile = args.reactionfile
 submitdir = os.getcwd()
 surf_json = os.path.join(submitdir, surf_json)
 
-# whether to cleanup working directory for vasp
+# whether to clean up working directory for vasp
 clean = False
 
 # save figures for structure
@@ -396,7 +396,7 @@ for irxn in range(rxn_num):
 
                 # keep vasprun.xml
                 if "vasp" in calculator:
-               	    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
+                    os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
                     os.system("cp {0:s}/vasprun.xml {1:s}.xml".format(dir, file_prefix))
 
                 #if savefig and mol_type == "adsorbed":
@@ -441,4 +441,3 @@ if check_surf_only:
 
 data = {"unique_id": unique_id, "reaction_energy": list(deltaE)}
 add_to_json(deltaE_json, data)
-
