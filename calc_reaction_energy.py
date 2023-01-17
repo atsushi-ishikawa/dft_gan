@@ -17,17 +17,18 @@ import shutil
 import socket
 
 # --- functions ---
-def set_unitcell_gasphase(Atoms, vacuum=10.0):
+def set_unitcell_gasphase(atoms, vacuum=10.0):
     cell = np.array([1, 1, 1]) * vacuum
-    Atoms.set_cell(cell)
+    atoms.set_cell(cell)
+
     if "vasp" in calculator:
-        Atoms.set_pbc(True)
+        atoms.set_pbc(True)
 
 
-def set_calculator_with_directory(Atoms, calc, directory="."):
+def set_calculator_with_directory(atoms, calc, directory="."):
     if "vasp" in calculator:
         calc.directory = directory
-    Atoms.set_calculator(calc)
+    atoms.set_calculator(calc)
 
 
 def run_optimizer(atoms, steps=100, optimize_unitcell=False, keep_cell_shape=False):
@@ -160,7 +161,7 @@ keep_cell_shape = True  # False...gives erronous reaction energy
 
 # whether to check coordinate by view
 check_surf_only = False
-check_all = True
+check_all = False
 
 # whether to optimize unit cell
 optimize_unitcell = False
@@ -189,18 +190,18 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 20  # maximum number of geomtry optimization steps
+steps = 50  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
     encut  = 400
-    xc     = "rpbe"
+    xc     = "pbe"
     ivdw   = 0
     nsw    = 0  # steps
     nelm   = 30
     nelmin = 3
     ibrion = -1
-    potim  = 0.25
+    potim  = 0.20
     algo   = "Fast"  # sometimes VeryFast fails
     ismear = 0
     sigma  = 0.1  # 0.1 or 0.2

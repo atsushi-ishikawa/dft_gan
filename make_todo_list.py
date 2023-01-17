@@ -6,6 +6,8 @@ todo_list = "todolist.txt"
 surf_json = "surf.json"
 reac_json = "reaction_energy.json"
 
+print("making to-do list ... result will be stored in {}".format(todo_list))
+
 df1 = load_ase_json(surf_json)
 
 if os.path.exists(reac_json):

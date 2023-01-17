@@ -21,6 +21,7 @@ parser.add_argument("--max_replace_percent", default=100, type=int, help="max pe
 parser.add_argument("--cif", default=None)
 
 args = parser.parse_args()
+outjson = "surf.json"
 
 cif = args.cif
 num_data = args.num
@@ -30,6 +31,8 @@ surf_geom = args.surf_geom
 vacuum = args.vacuum
 elem2 = args.symbol2
 max_rep = float(args.max_replace_percent)
+
+print("making base surface ... result will be stored on {}".format(outjson))
 
 # load base cif
 if cif is not None:
@@ -67,11 +70,10 @@ surf.wrap()
 calc  = EMT()
 
 # fake replacement of Ru --> Pt to use EMT
-for iatom in surf:
-    if iatom.symbol == "Ru":
-        iatom.symbol = "Pt"
+#for iatom in surf:
+#    if iatom.symbol == "Ru":
+#        iatom.symbol = "Pt"
 
-outjson = "surf.json"
 # remove old one
 if os.path.exists(outjson):
     os.remove(outjson)
@@ -83,7 +85,8 @@ db = connect(outjson)
 natoms = len(surf.get_atomic_numbers())
 max_replace = int((max_rep/100)*natoms)
 
-elem2 = ["Pd"]
+elem2 = ["Ir"]
+# elem2 = ["Pd"]
 # elem2 = ["Rh"]
 # elem2 = ["Ru"]
 

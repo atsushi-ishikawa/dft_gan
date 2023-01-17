@@ -1,26 +1,31 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=100
+num_data=5
 max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"
 dash_server="mio"
 
-dir=${HOME}/ase/nn_reac
-submit_shell=run_reaction_energy.sh
+dir=${HOME}/dft_gan
+submit_shell=run_kyushu.sh
+
 delete_unfinished=true
+use_dash=false
 use_queue=true
 
 # ---------------------------------------------------------------
 host=`hostname`
 if test $host == "whisky" -o $host == "vodka"; then
+	echo "NIMS environment"
 	stat=qstat
 	sub=qsub
-else
-	echo "This is not computational server. Mistake?"
-	exit
+elif test $host == "ito-1"; then
+	echo "Kyushu university ITO"
 	stat=pjstat
 	sub=pjsub
+else
+	echo "Unknown environment: stop"
+	exit
 fi
 #
 # --- delete unfinished jobs ---
@@ -68,15 +73,26 @@ for ((i=0; i<$max_num; i++)); do
 	# do reaction energy calculation for id
 	# do rate calculation for id
 	#         
-	if $use_queue; then
-		$sub $submit_shell $id
+	if "$use_queue"; then
+		# use queuing system
+		echo "$sub $submit_shell $id"
+
+		if [ $host == "ito-1" ]; then
+			$sub $submit_shell -x unique_id=$id
+		else
+			$sub $submit_shell $id
+		fi
 		sleep 3
 	else
+		# do not use queuing system ... direct execution
 		python calc_reaction_energy.py --id $id
 	fi
 done
 
 touch doing_reaction_energy_calc
-if [ $host != $dash_server ]; then
-	scp doing_reaction_energy_calc $dash_server:$dir
+if "$use_dash"; then
+	if [ $host != $dash_server ]; then
+		scp doing_reaction_energy_calc $dash_server:$dir
+	fi
 fi
+
