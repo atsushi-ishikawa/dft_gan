@@ -31,5 +31,5 @@ reactionfile="oer.txt"
 
 echo "unique_id=$unique_id"
 
-python ../../calc_reaction_energy.py --reactionfile=$reactionfile --unique_id=$unique_id --calculator=vasp 1> stdout_$LBL.txt 2> stderr_$LBL.txt 
+python ../../calc_reaction_energy.py --reactionfile=$reactionfile --unique_id=$unique_id --calculator=vasp --npar=6 1> stdout_$LBL.txt 2> stderr_$LBL.txt 
 

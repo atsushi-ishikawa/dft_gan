@@ -7,7 +7,7 @@ tmpdb="tmp.db"
 dash_server="mio"
 
 dir=${HOME}/dft_gan
-submit_shell=run_vasp.sh
+submit_shell=run_hokudai.sh
 
 delete_unfinished=true
 use_dash=false
@@ -15,16 +15,19 @@ use_queue=true
 
 # ---------------------------------------------------------------
 host=`hostname`
-if test $host == "whisky" -o $host == "vodka"; then
-	echo "NIMS environment"
+if [ $host == "whisky" ] || [ $host == "vodka" ] ; then
+	echo "NIMS"
+    environment="nims"
 	stat=qstat
 	sub=qsub
-elif test $host == "ito-1"; then
+elif [ $host == "ito-1" ] ; then
 	echo "Kyushu university ITO"
+    environment="kyushu"
 	stat=pjstat
 	sub=pjsub
-elif test $host == "polaire1.hucc"; then
+elif [ $host == "polaire1.hucc" ] || [ $host == "polaire2.hucc" ] ; then
 	echo "Hokkaido university GrandChariot"
+	environment="hokkaido"
 	stat=pjstat
 	sub=pjsub
 else
@@ -80,9 +83,7 @@ for ((i=0; i<$max_num; i++)); do
 	if "$use_queue"; then
 		# use queuing system
 		echo "$sub $submit_shell $id"
-
-		if [ $host == "ito-1" ] || [ $host == "polaire1.hucc" ] ; then
-			echo "OK: $sub $submit_shell -x unique_id=$id"
+		if [ $environment == "kyushu" ] || [ $environment == "hokkaido" ] ; then 
 			$sub $submit_shell -x unique_id=$id
 		else
 			$sub $submit_shell $id

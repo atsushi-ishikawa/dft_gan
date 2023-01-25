@@ -136,6 +136,7 @@ parser.add_argument("--calculator", default="emt", choices=["emt", "EMT", "vasp"
 parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces")
 parser.add_argument("--deltaE_json",  default="reaction_energy.json", help="file to write reaction energy")
 parser.add_argument("--reactionfile", default="nh3.txt", help="reaction string file")
+parser.add_argument("--npar", default=2, type=int, help="npar in VASP INCAR")
 
 args = parser.parse_args()
 unique_id    = args.unique_id
@@ -143,6 +144,7 @@ calculator   = args.calculator.lower()
 surf_json    = args.surf_json
 deltaE_json  = args.deltaE_json
 reactionfile = args.reactionfile
+npar = args.npar
 
 submitdir = os.getcwd()
 surf_json = os.path.join(submitdir, surf_json)
@@ -164,7 +166,7 @@ check_surf_only = False
 check_all = False
 
 # whether to optimize unit cell
-optimize_unitcell = True
+optimize_unitcell = False
 
 # workdir to store vasp data
 #workdir = "/work/a_ishi/"
@@ -195,7 +197,7 @@ steps = 20  # maximum number of geomtry optimization steps
 if "vasp" in calculator:
     prec   = "normal"
     encut  = 400
-    xc     = "pbe"
+    xc     = "rpbe"
     ivdw   = 0
     nsw    = 0  # steps
     nelm   = 30
@@ -211,7 +213,6 @@ if "vasp" in calculator:
     ispin  = 2
     kgamma = True
     pp     = "potpaw_PBE.54"
-    npar   = 6
     nsim   = npar
     isym   = 0
     lreal  = True  # False...reaction energy too low
