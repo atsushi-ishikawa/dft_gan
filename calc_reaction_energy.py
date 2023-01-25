@@ -164,7 +164,7 @@ check_surf_only = False
 check_all = False
 
 # whether to optimize unit cell
-optimize_unitcell = False
+optimize_unitcell = True
 
 # workdir to store vasp data
 #workdir = "/work/a_ishi/"
@@ -190,7 +190,7 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 50  # maximum number of geomtry optimization steps
+steps = 20  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
