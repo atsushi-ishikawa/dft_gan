@@ -1,13 +1,13 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=5
+num_data=1
 max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"
 dash_server="mio"
 
 dir=${HOME}/dft_gan
-submit_shell=run_kyushu.sh
+submit_shell=run_vasp.sh
 
 delete_unfinished=true
 use_dash=false
@@ -21,6 +21,10 @@ if test $host == "whisky" -o $host == "vodka"; then
 	sub=qsub
 elif test $host == "ito-1"; then
 	echo "Kyushu university ITO"
+	stat=pjstat
+	sub=pjsub
+elif test $host == "polaire1.hucc"; then
+	echo "Hokkaido university GrandChariot"
 	stat=pjstat
 	sub=pjsub
 else
@@ -77,7 +81,8 @@ for ((i=0; i<$max_num; i++)); do
 		# use queuing system
 		echo "$sub $submit_shell $id"
 
-		if [ $host == "ito-1" ]; then
+		if [ $host == "ito-1" ] || [ $host == "polaire1.hucc" ] ; then
+			echo "OK: $sub $submit_shell -x unique_id=$id"
 			$sub $submit_shell -x unique_id=$id
 		else
 			$sub $submit_shell $id

@@ -11,5 +11,5 @@ ciffile="RuO2.cif"
 rm $todolist reaction_energy.json loss.h5 2> /dev/null
 rm -rf ./log 2> /dev/null
 
-python $basedir/make_surf.py --num=$numdata --cif=$ciffile --max_replace_percent=10
+python $basedir/make_surf.py --num=$numdata --cif=$basedir/data/$ciffile --max_replace_percent=10
 python $basedir/make_todo_list.py

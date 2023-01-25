@@ -1,0 +1,84 @@
+
+#(C) 2022 by FIZ Karlsruhe - Leibniz Institute for Information Infrastructure.  All rights reserved.
+data_142339-ICSD
+_database_code_ICSD 142339
+_audit_creation_date 2021-08-01
+_chemical_name_common 'Ruthenium oxide (1/2)'
+_chemical_formula_structural 'Ru O2'
+_chemical_formula_sum 'O2 Ru1'
+_chemical_name_structure_type Rutile#TiO2
+_exptl_crystal_density_diffrn 7.06
+_citation_title
+
+;
+(M,Ru)O$_2$ (M = Mg, Zn, Cu, Ni, Co) rutiles and their use as oxygen evolution
+electrocatalysts in membrane electrode assemblies under acidic conditions
+;
+loop_
+_citation_id
+_citation_journal_full
+_citation_year
+_citation_journal_volume
+_citation_page_first
+_citation_page_last
+_citation_journal_id_ASTM
+primary 'Chemistry of Materials' 2020 32 6150 6160 CMATEX
+loop_
+_citation_author_citation_id
+_citation_author_name
+primary 'Burnett, David L.'
+primary 'Petrucco, Enrico'
+primary 'Rigg, Katie M.'
+primary 'Zalitis, Christopher M.'
+primary 'Lok, Jamie G.'
+primary 'Kashtiban, Reza J.'
+primary 'Lees, Martin R.'
+primary 'Sharman, Jonathan D.B.'
+primary 'Walton, Richard I.'
+_cell_length_a 4.49280(4)
+_cell_length_b 4.49280(4)
+_cell_length_c 3.10337(4)
+_cell_angle_alpha 90.
+_cell_angle_beta 90.
+_cell_angle_gamma 90.
+_cell_volume 62.64
+_cell_formula_units_Z 2
+_space_group_name_H-M_alt 'P 42/m n m'
+_space_group_IT_number 136
+loop_
+_space_group_symop_id
+_space_group_symop_operation_xyz
+1 '-y+1/2, x+1/2, -z+1/2'
+2 'y+1/2, -x+1/2, -z+1/2'
+3 'y, x, -z'
+4 '-y, -x, -z'
+5 'y+1/2, -x+1/2, z+1/2'
+6 '-y+1/2, x+1/2, z+1/2'
+7 '-y, -x, z'
+8 'y, x, z'
+9 'x+1/2, -y+1/2, -z+1/2'
+10 '-x+1/2, y+1/2, -z+1/2'
+11 'x, y, -z'
+12 '-x, -y, -z'
+13 '-x+1/2, y+1/2, z+1/2'
+14 'x+1/2, -y+1/2, z+1/2'
+15 '-x, -y, z'
+16 'x, y, z'
+loop_
+_atom_type_symbol
+_atom_type_oxidation_number
+Ru4+ 4
+O2- -2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_symmetry_multiplicity
+_atom_site_Wyckoff_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_occupancy
+Ru1 Ru4+ 2 a 0 0 0 0.0107(8) 0.999(1)
+O1 O2- 4 f 0.30490(12) 0.30490(12) 0 0.0505(9) 1.002(1)
+#End of TTdata_142339-ICSD
