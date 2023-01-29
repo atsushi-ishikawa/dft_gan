@@ -1,8 +1,7 @@
-import os, sys
+import sys
 import numpy as np
 import pandas as pd
 import argparse
-import json
 from scipy import interpolate
 from tools import find_highest
 import h5py

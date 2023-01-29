@@ -16,6 +16,8 @@ fix_element_number = 8  # oxygen
 #
 # functions
 #
+
+
 def make_dataloader(x=None, y=None, batch_size=10):
     import numpy as np
     import torch
@@ -107,9 +109,11 @@ def load_checkpoint(model, optimizer, filename, device):
     else:
         print("no checkpoint found")
 
+
 def onehot_encode(label, nclass, device):
     eye = torch.eye(nclass, device=device)
     return eye[label].view(-1, nclass, 1)
+
 
 def concat_vector_label(vector, label, nclass, device):
     N, C, L = vector.shape
@@ -118,6 +122,7 @@ def concat_vector_label(vector, label, nclass, device):
     oh_label = oh_label.expand(N, nclass, C)
     result = torch.cat((vector, oh_label), dim=1)
     return result
+
 
 def train(D, G, criterion, D_opt, G_opt, dataloader):
     D.train()

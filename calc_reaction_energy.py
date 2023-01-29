@@ -16,7 +16,7 @@ import argparse
 import shutil
 import socket
 
-# --- functions ---
+
 def set_unitcell_gasphase(atoms, vacuum=10.0):
     cell = np.array([1, 1, 1]) * vacuum
     atoms.set_cell(cell)
@@ -79,11 +79,11 @@ def run_optimizer(atoms, steps=100, optimize_unitcell=False, keep_cell_shape=Fal
     if "vasp" in calculator:
         if do_single_point:
             calc.int_params["ibrion"]  = -1
-            calc.int_params["nsw"]     =  0
-            calc.int_params["isif"]    =  2
-            calc.int_params["istart"]  =  1
-            calc.int_params["icharg"]  =  1
-            calc.input_params["potim"] =  0
+            calc.int_params["nsw"]     = 0
+            calc.int_params["isif"]    = 2
+            calc.int_params["istart"]  = 1
+            calc.int_params["icharg"]  = 1
+            calc.input_params["potim"] = 0
             atoms.set_calculator(calc)
 
     return en, atoms
@@ -122,7 +122,7 @@ def savefig_atoms(atoms, filename):
     import matplotlib.pyplot as plt
     from ase.visualize.plot import plot_atoms
     fig, ax = plt.subplots()
-    #plot_atoms(atoms, ax, rotation='280x,0y,0z')
+    # plot_atoms(atoms, ax, rotation='280x,0y,0z')
     plot_atoms(atoms, ax, rotation='0x,0y,0z')
     ax.set_axis_off()
     fig.savefig(filename)
@@ -171,8 +171,8 @@ check_all = False
 optimize_unitcell = False
 
 # workdir to store vasp data
-#workdir = "/work/a_ishi/"
-#workdir = "/home/a_ishi/dft_gan/work/"
+# workdir = "/work/a_ishi/"
+# workdir = "/home/a_ishi/dft_gan/work/"
 workdir = "work"
 
 # temprary database to avoid overlapping calculations
