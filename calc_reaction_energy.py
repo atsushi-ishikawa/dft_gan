@@ -137,6 +137,7 @@ parser.add_argument("--surf_json",  default="surf.json", help="json for surfaces
 parser.add_argument("--deltaE_json",  default="reaction_energy.json", help="file to write reaction energy")
 parser.add_argument("--reactionfile", default="nh3.txt", help="reaction string file")
 parser.add_argument("--npar", default=2, type=int, help="npar in VASP INCAR")
+parser.add_argument("--steps", default=5, type=int, help="number of geometry optimization stpes")
 
 args = parser.parse_args()
 unique_id    = args.unique_id
@@ -144,7 +145,8 @@ calculator   = args.calculator.lower()
 surf_json    = args.surf_json
 deltaE_json  = args.deltaE_json
 reactionfile = args.reactionfile
-npar = args.npar
+npar  = args.npar
+steps = args.steps
 
 submitdir = os.getcwd()
 surf_json = os.path.join(submitdir, surf_json)
@@ -192,31 +194,30 @@ print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
 db = connect(surf_json)
-steps = 20  # maximum number of geomtry optimization steps
 
 if "vasp" in calculator:
     prec   = "normal"
     encut  = 400
     xc     = "rpbe"
     ivdw   = 0
-    nsw    = 0  # steps
+    nsw    = 0  # overwritten by steps
     nelm   = 30
     nelmin = 3
     ibrion = -1
-    potim  = 0.20
+    potim  = 0.2
     algo   = "Fast"  # sometimes VeryFast fails
-    ismear = 0
+    ismear = 1
     sigma  = 0.1  # 0.1 or 0.2
     ediff  = 1.0e-4
     ediffg = -0.1
-    kpts   = [1, 1, 1]
+    kpts   = [2, 2, 1]
     ispin  = 2
     kgamma = True
     pp     = "potpaw_PBE.54"
     nsim   = npar
     isym   = 0
-    lreal  = True  # False...reaction energy too low
-    lorbit = 10    # to avoid error
+    lreal  = False  # False...reaction energy too low
+    lorbit = 10     # to avoid error
     lwave  = True if do_single_point else False
     lcharg = True if do_single_point else False
 
@@ -306,7 +307,7 @@ for irxn in range(rxn_num):
                 id_ = collection.get(name=mol[0]).id
                 adsorbate = collection.get_atoms(id=id_)
                 adsorbate.rotate(180, "y")
-                height0 = 1.6  # 1.3
+                height0 = 1.3  # 1.3 - 1.6
                 if site == "atop":
                     offset = (0.50, 0.50)  # for [2, 2] supercell
                     #offset = (0.33, 0.33)  # for [3, 3] supercell
@@ -322,7 +323,8 @@ for irxn in range(rxn_num):
                 elif site == "fcc":
                     #offset = (0.33, 0.33)  # for [2, 2] supercell
                     #offset = (0.20, 0.20)  # for [3, 3] supercell
-                    offset = (0.25, 0.25)  # for PtO2
+                    #offset = (0.25, 0.25)  # for PtO2
+                    offset = (0.50, 0.50)  # for RuO2
                     #offset = (0.22, 0.32)  # for stepped fcc
                     #offset = (0.50, 0.57)  # for stepped hcp...x and y cannot be rotated
                     height = height0
@@ -362,17 +364,19 @@ for irxn in range(rxn_num):
                 #
                 # setup calculator and do calculation
                 #
+                if ispin == 2:
+                    atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
+                else:
+                    atoms.set_initial_magnetic_moments(magmoms=[0]*len(atoms))
+
                 if mol_type == "gaseous":
                     set_unitcell_gasphase(atoms)
                     atoms.center()
-                    atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
                     calc = calc_mol
                 elif mol_type == "surf":
                     atoms = fix_lower_surface(atoms)
-                    atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
                     calc = calc_surf
                 elif mol_type == "adsorbed":
-                    atoms.set_initial_magnetic_moments(magmoms=[0.01]*len(atoms))
                     calc  = calc_surf
                     optimize_unitcell = False  # do not do cell optimization for adsorbed case
 
@@ -391,7 +395,7 @@ for irxn in range(rxn_num):
                 else:
                     # geometry optimization only
                     sys.stdout.flush()
-                    en, atoms = run_optimizer(atoms,  steps=steps, optimize_unitcell=optimize_unitcell,
+                    en, atoms = run_optimizer(atoms, steps=steps, optimize_unitcell=optimize_unitcell,
                                               keep_cell_shape=keep_cell_shape)
 
                 file_prefix = os.path.join(submitdir, "{0:s}_{1:02d}_{2:02d}".format(formula, irxn, imol))

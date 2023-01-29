@@ -226,9 +226,10 @@ def make_atomic_numbers(inputlist, oldlist):
     #elements = ["Ru", "Ni"]
     #elements = ["Ru", "Pd"]
     #elements = ["Ru", "Rh"]
-    elements = ["Pd", "Pt"]
+    #elements = ["Pd", "Pt"]
+    elements = ["Ru", "Ir"]
 
-    AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Pt": 78}
+    AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Ir": 77, "Pt": 78}
     elements = list(map(lambda x: AN[x], elements))
     elements = sorted(elements)
 
@@ -239,7 +240,8 @@ def make_atomic_numbers(inputlist, oldlist):
     lists = inputlist.astype(int).tolist()  # float --> int --> python list
 
     if scaler_selection == "minmax":
-        lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in lists]
+        #lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in lists]
+        lists = [list(pd.cut(pd.Series(i), len(elements), labels=elements)) for i in lists]
     else:
         lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], i)) for i in lists]
 
@@ -424,18 +426,21 @@ surf = db.get_atoms(id=1).copy()
 #surf.pbc = True
 #surf.translate([0, 0, -vacuum+1.0])
 
-check = True
+check = False
 write = True
+
 db = connect(surf_json, type="json")  # add to existing file
 atomic_numbers_original = surf.get_atomic_numbers()
 
 for sample in samples:
     atomic_numbers = []
+    counter = 0
     for i, iatom in enumerate(atomic_numbers_original):
         if iatom == fix_element_number:
             atomic_numbers.append(fix_element_number)
         else:
-            atomic_numbers.append(sample[i])
+            atomic_numbers.append(sample[counter])
+            counter += 1
 
     surf.set_atomic_numbers(atomic_numbers)
     formula = surf.get_chemical_formula()

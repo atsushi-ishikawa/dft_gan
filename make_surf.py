@@ -15,7 +15,7 @@ parser.add_argument("--num", default=1, type=int, help="number of surfaces gener
 parser.add_argument("--check", action="store_true", help="check structure or not")
 parser.add_argument("--symbol", default="Pt", help="element")
 parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fcc", "step_hcp"])
-parser.add_argument("--vacuum", default=7.0, help="length of vacuum layer")
+parser.add_argument("--vacuum", default=10.0, type=float, help="length of vacuum layer")
 parser.add_argument("--symbol2", default="Rh", help="second element for alloy")
 parser.add_argument("--max_replace_percent", default=100, type=int, help="max percent of second element")
 parser.add_argument("--cif", default=None)
@@ -24,12 +24,13 @@ args = parser.parse_args()
 outjson = "surf.json"
 
 cif = args.cif
-num_data = args.num
-check    = args.check
-element  = args.symbol
+num_data  = args.num
+check     = args.check
+element   = args.symbol
 surf_geom = args.surf_geom
-vacuum = args.vacuum
-elem2 = args.symbol2
+vacuum    = args.vacuum
+elem2     = args.symbol2
+
 max_rep = float(args.max_replace_percent)
 
 print("making base surface ... result will be stored on {}".format(outjson))
@@ -38,7 +39,7 @@ print("making base surface ... result will be stored on {}".format(outjson))
 if cif is not None:
     bulk = read(cif)
     surf = surface(bulk, indices=[1, 1, 0], layers=4, vacuum=vacuum, periodic=True)
-    surf = surf*[2, 2, 1]
+    surf = surf*[1, 2, 1]
 else:
     # lattice constant
     lattice_const = {"Ru": 2.7*1.4, "Pt": 3.9, "Ni": 3.5}
@@ -95,7 +96,7 @@ data = {}
 id = 1
 for i in range(num_data):
     surf_copy = surf.copy()
-    surf_copy = remove_layer(atoms=surf_copy, symbol="O", higher=2)
+    surf_copy = remove_layer(atoms=surf_copy, symbol="O", higher=1)
     #
     # make replaced surface
     #

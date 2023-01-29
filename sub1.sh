@@ -1,6 +1,6 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=1
+num_data=5
 max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"
@@ -88,7 +88,7 @@ for ((i=0; i<$max_num; i++)); do
 		else
 			$sub $submit_shell $id
 		fi
-		sleep 3
+		sleep 10
 	else
 		# do not use queuing system ... direct execution
 		python calc_reaction_energy.py --id $id
