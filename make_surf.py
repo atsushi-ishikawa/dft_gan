@@ -12,11 +12,10 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-args_list = lambda x: list(map(str, x.split(",")))  # allow list for element_to and element_from
+args_list = lambda x: list(map(str, x.replace("[", "").replace("]", "").replace('"', '').split(",")))  # allow list for elements
 
 parser.add_argument("--num", default=1, type=int, help="number of surfaces generating")
 parser.add_argument("--check", action="store_true", help="check structure or not")
-parser.add_argument("--symbol", default="Pt", help="element")
 parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fcc", "step_hcp"])
 parser.add_argument("--vacuum", default=10.0, type=float, help="length of vacuum layer")
 parser.add_argument("--elem_from", type=args_list, default="Ru", help='elements to be replaced (e.g. ["Ru", "Ir"]')
@@ -30,16 +29,11 @@ outjson = "surf.json"
 cif = args.cif
 num_data  = args.num
 check     = args.check
-element   = args.symbol
 surf_geom = args.surf_geom
 vacuum    = args.vacuum
 
 elem_from = args.elem_from
 elem_to   = args.elem_to
-
-# in case of nested list
-elem_from = [x for row in elem_from for x in row]
-elem_to   = [x for row in elem_to for x in row]
 
 max_rep = float(args.max_replace_percent)
 
@@ -52,6 +46,7 @@ if cif is not None:
     surf = surf*[1, 2, 1]
 else:
     # lattice constant
+    element  = "Pt"  # default
     lattice_const = {"Ru": 2.7*1.4, "Pt": 3.9, "Ni": 3.5}
     elem = {"symbol": element, "a": lattice_const[element]}
 
