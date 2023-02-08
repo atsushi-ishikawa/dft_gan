@@ -138,6 +138,7 @@ parser.add_argument("--deltaE_json",  default="reaction_energy.json", help="file
 parser.add_argument("--reactionfile", default="nh3.txt", help="reaction string file")
 parser.add_argument("--npar", default=2, type=int, help="npar in VASP INCAR")
 parser.add_argument("--steps", default=5, type=int, help="number of geometry optimization stpes")
+parser.add_argument("--encut", default=400, type=int, help="plane off cutoff in VASP (eV)")
 
 args = parser.parse_args()
 unique_id    = args.unique_id
@@ -145,6 +146,8 @@ calculator   = args.calculator.lower()
 surf_json    = args.surf_json
 deltaE_json  = args.deltaE_json
 reactionfile = args.reactionfile
+
+encut = float(args.encut)
 npar  = args.npar
 steps = args.steps
 
@@ -168,7 +171,7 @@ check_surf_only = False
 check_all = False
 
 # whether to optimize unit cell
-optimize_unitcell = False
+optimize_unitcell = True
 
 # workdir to store vasp data
 # workdir = "/work/a_ishi/"
@@ -197,26 +200,25 @@ db = connect(surf_json)
 
 if "vasp" in calculator:
     prec   = "normal"
-    encut  = 400
     xc     = "rpbe"
     ivdw   = 0
     nsw    = 0  # overwritten by steps
-    nelm   = 30
-    nelmin = 3
+    nelm   = 50
+    nelmin = 5
     ibrion = -1
-    potim  = 0.2
+    potim  = 0.1
     algo   = "Fast"  # sometimes VeryFast fails
-    ismear = 1
-    sigma  = 0.1  # 0.1 or 0.2
-    ediff  = 1.0e-4
-    ediffg = -0.1
-    kpts   = [2, 2, 1]
-    ispin  = 2
+    ismear = 2
+    sigma  = 0.1
+    ediff  = 1.0e-5
+    ediffg = -0.1  # -0.05
+    kpts   = [1, 1, 1]  # [4, 4, 1]
+    ispin  = 1
     kgamma = True
     pp     = "potpaw_PBE.54"
     nsim   = npar
-    isym   = 0
-    lreal  = False  # False...reaction energy too low
+    isym   = -1
+    lreal  = False
     lorbit = 10     # to avoid error
     lwave  = True if do_single_point else False
     lcharg = True if do_single_point else False
@@ -359,7 +361,7 @@ for irxn in range(rxn_num):
                         first_time = False
 
             first_or_not = "first time" if first_time else "already calculated"
-            print("now calculating {0:>12s} ... {1:s}".format(formula, first_or_not))
+            print("now calculating {0:>14s} ... {1:s}".format(formula, first_or_not))
             if first_time:
                 #
                 # setup calculator and do calculation
