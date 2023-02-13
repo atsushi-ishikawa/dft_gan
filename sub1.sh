@@ -1,13 +1,12 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=5
+num_data=1
 max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"
 dash_server="mio"
 
 dir=${HOME}/dft_gan
-submit_shell=run_hokudai.sh
 
 delete_unfinished=true
 use_dash=false
@@ -25,11 +24,13 @@ elif [ $host == "ito-1" ] ; then
     environment="kyushu"
 	stat=pjstat
 	sub=pjsub
+	submit_shell=run_kyushu.sh
 elif [ $host == "polaire1.hucc" ] || [ $host == "polaire2.hucc" ] ; then
 	echo "Hokkaido university GrandChariot"
 	environment="hokkaido"
 	stat=pjstat
 	sub=pjsub
+	submit_shell=run_hokudai.sh
 else
 	echo "Unknown environment: stop"
 	exit
@@ -54,7 +55,7 @@ fi
 #
 nline=`cat $todolist | wc -l`
 
-if $use_queue && [ $nline -ge $max_sub ]; then
+if $use_queue && [ $nline -ge $max_sub ] ; then
 	max_num=$max_sub
 else
 	max_num=$nline
@@ -68,6 +69,8 @@ fi
 rm stdout* stderr* 2> /dev/null
 rm $submit_shell*.{e,o}[0-9]* 2> /dev/null
 rm $tmpdb 2> /dev/null
+
+python ${dir}/make_tmpdb.py --tmpdb_name=$tmpdb
 
 for ((i=0; i<$max_num; i++)); do
 	#
@@ -88,10 +91,10 @@ for ((i=0; i<$max_num; i++)); do
 		else
 			$sub $submit_shell $id
 		fi
-		sleep 10
+		sleep 1
 	else
 		# do not use queuing system ... direct execution
-		python calc_reaction_energy.py --id $id
+		python ${dir}/calc_reaction_energy.py --id $id
 	fi
 done
 
