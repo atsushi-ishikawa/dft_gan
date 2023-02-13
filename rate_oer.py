@@ -80,7 +80,7 @@ for id in range(num_data):
         deltaH = deltaE + deltaZPE
         deltaG = deltaH - T*deltaS
 
-        eta = np.max(deltaG)  # overpotential
+        eta = np.max(deltaG) - 1.23   # overpotential
         score = -eta  # smaller is better
 
         data = {"unique_id": unique_id, "reaction_energy": list(deltaE),

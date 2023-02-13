@@ -1,10 +1,17 @@
 import os
 import pandas as pd
+import argparse
 from tools import load_ase_json
 
-todo_list = "todolist.txt"
-surf_json = "surf.json"
-reac_json = "reaction_energy.json"
+parser = argparse.ArgumentParser()
+parser.add_argument("--surf_json", default="surf.json", help="json for surfaces")
+parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reaction energies")
+parser.add_argument("--todo_list", default="todolist.txt", help="json for reaction energies")
+
+args = parser.parse_args()
+surf_json = args.surf_json
+reac_json = args.reac_json
+todo_list = args.todo_list
 
 print("making to-do list ... result will be stored in {}".format(todo_list))
 

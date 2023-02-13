@@ -12,12 +12,6 @@ import h5py
 import numpy as np
 import argparse
 
-fix_element_number = 8  # oxygen
-#
-# functions
-#
-
-
 def make_dataloader(x=None, y=None, batch_size=10):
     import numpy as np
     import torch
@@ -206,7 +200,7 @@ def gan(num_epoch=100):
         history["G_loss"].append(G_loss)
 
         if epoch != 0 and epoch % printnum == 0:
-            print("epoch = %3d, D_loss = %8.5f, G_loss = %8.5f" % (epoch, D_loss, G_loss))
+            print("epoch = %4d, D_loss = %8.5f, G_loss = %8.5f" % (epoch, D_loss, G_loss))
 
     with h5py.File(loss_file, "a") as f:
         size_resize = int(f["epoch"].shape[0] + num_epoch)
@@ -218,7 +212,7 @@ def gan(num_epoch=100):
         f["D_loss"][-num_epoch:] = history["D_loss"]
         f["G_loss"][-num_epoch:] = history["G_loss"]
 
-def make_atomic_numbers(inputlist, oldlist):
+def make_atomic_numbers(inputlist, oldlist, elements):
     """
     Assuming atomic number sequence is transformed to (0,1).
     :param inputlist
@@ -227,12 +221,6 @@ def make_atomic_numbers(inputlist, oldlist):
     """
     global scaler_selection
 
-    #elements = ["Ru", "Pt"]
-    #elements = ["Ru", "Ni"]
-    #elements = ["Ru", "Pd"]
-    #elements = ["Ru", "Rh"]
-    #elements = ["Pd", "Pt"]
-    elements = ["Ru", "Ir"]
 
     AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Ir": 77, "Pt": 78}
     elements = list(map(lambda x: AN[x], elements))
@@ -242,11 +230,12 @@ def make_atomic_numbers(inputlist, oldlist):
     if len(inputlist.shape) == 3:
         inputlist = inputlist.reshape(batch_size, -1)
 
+    inputlist = inputlist*(len(elements)-1)
     lists = inputlist.astype(int).tolist()  # float --> int --> python list
 
     if scaler_selection == "minmax":
-        #lists = [list(map(lambda x: elements[0] if x < 0.5 else elements[-1], i)) for i in lists]
-        lists = [list(pd.cut(pd.Series(i), len(elements), labels=elements)) for i in lists]
+        #lists = [list(pd.cut(pd.Series(i), len(elements), labels=elements)) for i in lists]
+        lists = [list(map(lambda x: elements[x], i)) for i in lists]
     else:
         lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], i)) for i in lists]
 
@@ -264,9 +253,15 @@ def make_atomic_numbers(inputlist, oldlist):
 
     return newlist
 
-def make_replace_atom_list(inlist):
+def make_replace_atom_list(inlist, fix_element_number):
     outlist = list(filter(lambda x: x != fix_element_number, inlist))
     return outlist
+
+def make_scaled_atom_list(inlist, elem_list):
+    for ind, element in enumerate(elem_list):
+        inlist = list(map(lambda x: ind if x==element else x, inlist))
+    return inlist
+
 #
 # main program starts here
 #
@@ -322,14 +317,19 @@ numdata = len(df)
 #
 numuse = int(numdata * 1.0)
 nclass = 5  # 10
+#
+# elements
+#
+fix_element_number = 8  # oxygen
+elements = ["Ru", "Ir", "Pt"]
 
 if method == "random":
     num_epoch  = 1
 else:
-    num_epoch  = 1000  # 2000 is better than 1000
+    num_epoch  = 2000  # 2000 is better than 1000
 
-printnum   = 200
-batch_size = numdata  # numdata//5  # from experience
+printnum = 200
+batch_size = numdata//5  # from experience
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5
@@ -340,7 +340,7 @@ scaler_selection = "minmax"
 #scaler_selection = "standard"
 
 if scaler_selection == "minmax":
-    scaler  = MinMaxScaler()  # makes (0,1) for binary system
+    scaler  = MinMaxScaler()  # make atomic number list to (0~1) list
 else:
     scaler  = StandardScaler()
 
@@ -361,13 +361,21 @@ print(df[df["rank"] == nclass-1])
 print(df[df["rank"] == 0])
 
 # Extract atomic numbers to replace, by removing atoms to fix.
-df["atomic_numbers_replace"] = df["atomic_numbers"].apply(make_replace_atom_list)
+df["atomic_numbers_replace"] = df["atomic_numbers"].apply(make_replace_atom_list, fix_element_number=fix_element_number)
 
-dataloader = make_dataloader(x=df["atomic_numbers_replace"], y=df["rank"], batch_size=batch_size)
+tmplist = []
+for i in range(len(df)):
+    tmplist.extend(df.iloc[i]["atomic_numbers_replace"])
+
+elem_list = sorted(list(set(tmplist)))
+
+df["atomic_numbers_replace_scaled"] = df["atomic_numbers_replace"].apply(make_scaled_atom_list, elem_list=elem_list)
+
+dataloader = make_dataloader(x=df["atomic_numbers_replace_scaled"], y=df["rank"], batch_size=batch_size)
 
 nchannel = 64
 nstride  = 3
-natom = len(df.iloc[0]["atomic_numbers_replace"])
+natom = len(df.iloc[0]["atomic_numbers_replace_scaled"])
 nrun  = df["run"].max()
 
 criterion = nn.MSELoss()
@@ -400,7 +408,7 @@ if method == "gan":
         fakesystem.append(generate(G, target=target))
 
     target_class = nclass-1
-    samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers_replace"])
+    samples = make_atomic_numbers(fakesystem[target_class], df["atomic_numbers_replace_scaled"], elements=elements)
 
 else:
     # random -- for benchmarking
@@ -410,7 +418,7 @@ else:
         random = np.array(list(np.random.randint(0, 2, natom)))
         randoms[i] = random
 
-    samples = make_atomic_numbers(randoms, df["atomic_numbers_replace"])
+    samples = make_atomic_numbers(randoms, df["atomic_numbers_replace_scaled"], elements=elements)
 
 from ase.db import connect
 

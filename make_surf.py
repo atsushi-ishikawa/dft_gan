@@ -14,26 +14,28 @@ parser = argparse.ArgumentParser()
 
 args_list = lambda x: list(map(str, x.replace("[", "").replace("]", "").replace('"', '').split(",")))  # allow list for elements
 
-parser.add_argument("--num", default=1, type=int, help="number of surfaces generating")
+parser.add_argument("--num_data", default=1, type=int, help="number of surfaces generating")
 parser.add_argument("--check", action="store_true", help="check structure or not")
 parser.add_argument("--surf_geom", default="fcc111", choices=["fcc111", "step_fcc", "step_hcp"])
 parser.add_argument("--vacuum", default=10.0, type=float, help="length of vacuum layer")
 parser.add_argument("--elem_from", type=args_list, default="Ru", help='elements to be replaced (e.g. ["Ru", "Ir"]')
 parser.add_argument("--elem_to", type=args_list, default="Rh", help='elements to replace (e.g. ["Ru", "Ir"]')
 parser.add_argument("--max_replace_percent", default=100, type=int, help="max percent of second element")
+parser.add_argument("--replace_pattern", type=str, default="random", help="how to do atom replacement (random or all); num_data becomes #elem_to")
 parser.add_argument("--cif", default=None)
 
 args = parser.parse_args()
 outjson = "surf.json"
 
 cif = args.cif
-num_data  = args.num
+num_data  = args.num_data
 check     = args.check
 surf_geom = args.surf_geom
 vacuum    = args.vacuum
 
 elem_from = args.elem_from
 elem_to   = args.elem_to
+replace_pattern = args.replace_pattern
 
 max_rep = float(args.max_replace_percent)
 
@@ -107,16 +109,24 @@ for i in range(num_data):
     else:
         num_replace = 0
 
-    # replace element
-    from_list = []
-    for iatom in surf_copy:
-        if iatom.symbol != "O":
-            from_list.append(iatom.index)
+    ## replace element
+    # all 
+    if replace_pattern == "all":
+        replacing = elem_to.pop()
+        for iatom in surf_copy:
+            if iatom.symbol in elem_from:
+                iatom.symbol = replacing
+   # random
+    else:
+        from_list = []
+        for iatom in surf_copy:
+            if iatom.symbol != "O":
+                from_list.append(iatom.index)
 
-    from_list = random.sample(from_list, num_replace)
+        from_list = random.sample(from_list, num_replace)
 
-    for iatom in from_list:
-        surf_copy[iatom].symbol = random.choice(elem_to)
+        for iatom in from_list:
+            surf_copy[iatom].symbol = random.choice(elem_to)
 
     # get element atomic_numbers
     atomic_numbers = surf_copy.get_atomic_numbers()

@@ -178,7 +178,9 @@ optimize_unitcell = True
 # workdir = "/home/a_ishi/dft_gan/work/"
 workdir = "work"
 
-# temprary database to avoid overlapping calculations
+# Temprary database to avoid overlapping calculations.
+# For parallel calculation, database should be made beforehand,
+# as some process might access to db.
 tmpdbfile = "tmp.db"
 tmpdbfile = os.path.join(submitdir, tmpdbfile)
 tmpdb = connect(tmpdbfile)
@@ -208,10 +210,10 @@ if "vasp" in calculator:
     ibrion = -1
     potim  = 0.1
     algo   = "Fast"  # sometimes VeryFast fails
-    ismear = 2
+    ismear = 0  # 2
     sigma  = 0.1
     ediff  = 1.0e-5
-    ediffg = -0.1  # -0.05
+    ediffg = -0.07  #  -0.05
     kpts   = [1, 1, 1]  # [4, 4, 1]
     ispin  = 1
     kgamma = True
