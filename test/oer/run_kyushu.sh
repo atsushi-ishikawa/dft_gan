@@ -28,8 +28,11 @@ echo "exitcode = os.system(\"mpirun -np ${NUM_PROCS} ${PRG}\")" >> $vasp_script
 LBL=$$
 unique_id=$unique_id
 reactionfile="oer.txt"
+encut=400
+steps=200
+npar=6
 
 echo "unique_id=$unique_id"
 
-python ../../calc_reaction_energy.py --reactionfile=$reactionfile --unique_id=$unique_id --calculator=vasp --npar=6 1> stdout_$LBL.txt 2> stderr_$LBL.txt 
+python ../../calc_reaction_energy.py --reactionfile=$reactionfile --unique_id=$unique_id --calculator=vasp --npar=$npar --steps=$steps --encut=$encut 1> stdout_$LBL.txt 2> stderr_$LBL.txt 
 
