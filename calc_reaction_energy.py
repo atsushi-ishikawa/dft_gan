@@ -9,6 +9,7 @@ from tools import fix_lower_surface
 from reaction_tools import get_reac_and_prod, get_number_of_reaction
 import sys
 import json
+import datetime
 import os
 import pandas as pd
 import numpy as np
@@ -195,6 +196,7 @@ if not os.path.isfile(deltaE_json):
     with open(deltaE_json, "w") as f:
         f.write(json.dumps([], indent=4))
 
+print(datetime.datetime.now().strftime("%Y-%m-%d_%H:%M"))
 print("hostname: ", socket.gethostname())
 print("id: ", unique_id)
 
