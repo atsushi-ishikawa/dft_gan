@@ -25,7 +25,13 @@ python ${dir}/rate_oer.py
 rm doing_reaction_energy_calc 2> /dev/null
 touch doing_GAN
 
+# delete unfinished (maybe errornous) samples from surface json file
+python ${dir}/delete_unfinished_from_surf.py
+
+# generate new samples and add them to surface json file
 python ${dir}/nn_reac.py
+
+# make to-do list file for next DFT calculations
 python ${dir}/make_todo_list.py
 #
 # send
