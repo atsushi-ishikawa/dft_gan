@@ -38,7 +38,7 @@ bad_list = df[df[target_key] < thre].index.values
 del_list = np.concatenate([null_list, bad_list])
 
 db = connect(surf_json)
-for i in null_list:
+for i in del_list:
     id = db.get(unique_id=i).id
     db.delete([id])
 

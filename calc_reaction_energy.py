@@ -212,13 +212,13 @@ if "vasp" in calculator:
     ibrion = -1
     potim  = 0.1
     algo   = "Fast"  # sometimes VeryFast fails
-    ismear = 0  # 2
+    ismear = 0
     sigma  = 0.1
     ediff  = 1.0e-5
-    ediffg = -0.07  #  -0.05
-    kpts   = [1, 1, 1]  # [4, 4, 1]
+    ediffg = -0.10
+    kpts   = [2, 2, 1]  # [4, 4, 1]
     ispin  = 1
-    kgamma = True
+    lasph  = False
     pp     = "potpaw_PBE.54"
     nsim   = npar
     isym   = -1
@@ -232,12 +232,12 @@ if "vasp" in calculator:
 
     calc_mol  = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg,
                      ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=[1, 1, 1],
-                     kgamma=True, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-                     lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit)
+                     ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+                     lwave=lwave, lcharg=lcharg, ismear=0, sigma=sigma, lorbit=lorbit, lasph=lasph)
     calc_surf = Vasp(prec=prec, encut=encut, xc=xc, ivdw=ivdw, algo=algo, ediff=ediff, ediffg=ediffg,
                      ibrion=ibrion, potim=potim, nsw=nsw, nelm=nelm, nelmin=nelmin, kpts=kpts,
-                     kgamma=kgamma, ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
-                     lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit,
+                     ispin=ispin, pp=pp, npar=npar, nsim=nsim, isym=isym, lreal=lreal,
+                     lwave=lwave, lcharg=lcharg, ismear=ismear, sigma=sigma, lorbit=lorbit, lasph=lasph,
                      ldipol=ldipol, idipol=idipol)
 
 elif "emt" in calculator:
