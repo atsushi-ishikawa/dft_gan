@@ -207,7 +207,7 @@ if "vasp" in calculator:
     xc     = "rpbe"
     ivdw   = 0
     nsw    = 0  # overwritten by steps
-    nelm   = 50
+    nelm   = 30
     nelmin = 5
     ibrion = -1
     potim  = 0.1
@@ -215,10 +215,10 @@ if "vasp" in calculator:
     ismear = 0
     sigma  = 0.1
     ediff  = 1.0e-5
-    ediffg = -0.10
-    kpts   = [2, 2, 1]  # [4, 4, 1]
+    ediffg = -0.50
+    kpts   = [1, 1, 1]  # [4, 4, 1]
     ispin  = 1
-    lasph  = False
+    lasph  = True
     pp     = "potpaw_PBE.54"
     nsim   = npar
     isym   = -1

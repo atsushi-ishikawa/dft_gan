@@ -9,8 +9,7 @@ import math
 np.set_printoptions(precision=3)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--reac_json", default="reaction_energy.json",
-                                   help="json for reading reaction energy and writing rate")
+parser.add_argument("--reac_json", default="reaction_energy.json", help="json for reading reaction energy and writing rate")
 
 args = parser.parse_args()
 reac_json = args.reac_json
@@ -22,7 +21,7 @@ kJtoeV = 1/98.415
 kB = 8.617e-5  # eV/K
 
 # --------------------------
-reactionfile = "oer.txt"
+reactionfile = "oer_and_cer.txt"
 rxn_num = get_number_of_reaction(reactionfile)
 
 ## OER
@@ -31,15 +30,17 @@ rxn_num = get_number_of_reaction(reactionfile)
 # 2) O* + H2O -> OOH* + H+ + e-
 # 3) OOH* -> * + O2 + H+ + e-
 #  Using CHE, chemical potential of H+ + e- becomes that of 0.5*H2.
+#  O2 Gibbs energy is replaced: O2 + 2H2 <-> 2H2O + 4.92
 #
 ## CER
 # 4) Cl- + * -> Cl* + e-
 # 5) Cl* + Cl- -> Cl2 + * + e-
+#  Cl- Gibbs energy is replaced: Cl- = 0.5*Cl2 + e- - 1.36
 #
 ## hypoCER
 # omitted) Cl- + * -> Cl* + e- (same with 4 in CER)
 # 6)  Cl* + H2O -> * + HOCl + H+ + e-
-# 7') Cl* + H2O -> * + 0.5*Cl2 + H2O + 1.61
+#  HOCl Gibbs energy is replaced: HOCl + H+ + e- <-> 0.5*Cl2 + H2O + 1.61
 
 species = {"H2" : 0, "H2O": 1, "OHads": 2, "Oads": 3, "OOHads": 4, "O2": 5, "Cl2": 6, "Clads": 7}
 
@@ -68,27 +69,31 @@ deltaS    = np.zeros(rxn_num)
 deltaS[0] = 0.5*S[species["H2"]] - S[species["H2O"]]
 deltaS[1] = 0.5*S[species["H2"]]
 deltaS[2] = 0.5*S[species["H2"]] - S[species["H2O"]]
-deltaS[3] = S[species["O2"]] + 0.5*S[species["H2"]]
+#deltaS[3] = S[species["O2"]] + 0.5*S[species["H2"]]
+deltaS[3] = 2.0*S[species["H2O"]] -1.5*S[species["H2"]]
 
-deltaS[4] = 0.0
-deltaS[5] = 0.0
-deltaS[6] = 0.0
+deltaS[4] = -0.5*S[species["Cl2"]]
+deltaS[5] = 0.5*S[species["Cl2"]]
+deltaS[6] = 0.5*S[species["Cl2"]]
 
 # zero-point energy (ZPE) in eV
 deltaZPE    = np.zeros(rxn_num)
 deltaZPE[0] = zpe[species["OHads"]] + 0.5*zpe[species["H2"]] - zpe[species["H2O"]]
 deltaZPE[1] = zpe[species["Oads"]] + 0.5*zpe[species["H2"]] - zpe[species["OHads"]]
 deltaZPE[2] = zpe[species["OOHads"]] + 0.5*zpe[species["H2"]] - zpe[species["Oads"]] - zpe[species["H2O"]]
-deltaZPE[3] = zpe[species["O2"]] + 0.5*zpe[species["H2"]] - zpe[species["OOHads"]]
+#deltaZPE[3] = zpe[species["O2"]] + 0.5*zpe[species["H2"]] - zpe[species["OOHads"]]
+deltaZPE[3] = 2.0*zpe[species["H2O"]] - 1.5*zpe[species["H2"]] - zpe[species["OOHads"]]
 
-deltaZPE[4] = 0.0
-deltaZPE[5] = 0.0
-deltaZPE[6] = 0.0
+deltaZPE[4] = zpe[species["Clads"]] - 0.5*zpe[species["Cl2"]]
+deltaZPE[5] = 0.5*zpe[species["Cl2"]] - zpe[species["Clads"]]
+deltaZPE[6] = 0.5*zpe[species["Cl2"]] - zpe[species["Clads"]]
 
-# redox potential shift
+# redox potential shift, added to the right-hand side
 redox = np.zeros(rxn_num)
-redox[3] = 4.92  # O2 + 2H2 <-> 2H2O + 4.92
-
+redox[3] = 4.92  # OER4
+redox[4] = 1.36  # CER1
+redox[5] = 1.36  # CER2
+redox[6] = 1.61  # hCER2
 
 # reation energies (in eV) and equilibrium constant
 df_reac  = pd.read_json(reac_json)
@@ -106,10 +111,11 @@ for id in range(num_data):
         deltaE = np.array(deltaE)
         deltaH = deltaE + deltaZPE
         deltaG = deltaH - T*deltaS
+        deltaG = deltaG + redox
 
         eta_oer  = np.max(deltaG[0:4]) - 1.23   # overpotential of OER
-        eta_cer  = np.max([deltaG[4], deltaG[5]]) - 0.00   # overpotential of CER
-        eta_hcer = np.max([deltaG[4], deltaG[6]]) - 0.00   # overpotential of hypoCER
+        eta_cer  = np.max([deltaG[4], deltaG[5]]) - 1.36   # overpotential of CER
+        eta_hcer = np.max([deltaG[4], deltaG[6]]) - 1.49   # overpotential of hypoCER
 
         eta_cers = np.min([eta_cer, eta_hcer])
 
