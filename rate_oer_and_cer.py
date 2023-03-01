@@ -43,6 +43,7 @@ rxn_num = get_number_of_reaction(reactionfile)
 #  HOCl Gibbs energy is replaced: HOCl + H+ + e- <-> 0.5*Cl2 + H2O + 1.61
 
 species = {"H2" : 0, "H2O": 1, "OHads": 2, "Oads": 3, "OOHads": 4, "O2": 5, "Cl2": 6, "Clads": 7}
+E_redox = {"OER": 0.758, "CER": 1.375, "hCER": 1.256}
 
 # entropy in eV/K
 S = np.zeros(len(species))
@@ -88,12 +89,12 @@ deltaZPE[4] = zpe[species["Clads"]] - 0.5*zpe[species["Cl2"]]
 deltaZPE[5] = 0.5*zpe[species["Cl2"]] - zpe[species["Clads"]]
 deltaZPE[6] = 0.5*zpe[species["Cl2"]] - zpe[species["Clads"]]
 
-# redox potential shift, added to the right-hand side
-redox = np.zeros(rxn_num)
-redox[3] = 4.92  # OER4
-redox[4] = 1.36  # CER1
-redox[5] = 1.36  # CER2
-redox[6] = 1.61  # hCER2
+# shift potential shift, added to the right-hand side
+shift = np.zeros(rxn_num)
+shift[3] = 4.92  # OER4
+shift[4] = 1.36  # CER1
+shift[5] = 1.36  # CER2
+shift[6] = 1.61  # hCER2
 
 # reation energies (in eV) and equilibrium constant
 df_reac  = pd.read_json(reac_json)
@@ -111,19 +112,19 @@ for id in range(num_data):
         deltaE = np.array(deltaE)
         deltaH = deltaE + deltaZPE
         deltaG = deltaH - T*deltaS
-        deltaG = deltaG + redox
+        deltaG = deltaG + shift
 
-        eta_oer  = np.max(deltaG[0:4]) - 1.23   # overpotential of OER
-        eta_cer  = np.max([deltaG[4], deltaG[5]]) - 1.36   # overpotential of CER
-        eta_hcer = np.max([deltaG[4], deltaG[6]]) - 1.49   # overpotential of hypoCER
+        eta_oer  = np.max(deltaG[0:4]) - E_redox["OER"]  # overpotential of OER
+        eta_cer  = np.max([deltaG[4], deltaG[5]]) - E_redox["CER"]   # overpotential of CER
+        eta_hcer = np.max([deltaG[4], deltaG[6]]) - E_redox["hCER"]  # overpotential of hypoCER
 
         eta_cers = np.min([eta_cer, eta_hcer])
 
-        score = -(eta_oer - eta_cers)
+        score = -(eta_oer - eta_cers)  # bigger is better
 
         data = {"unique_id": unique_id, "reaction_energy": list(deltaE),
                 "gibbs_energy": list(deltaG), "temperature": T, 
-                "eta_oer": eta_oer, "eta_cer": eta_cer, "eta_hcer": eta_hcer,
+                "eta_oer": eta_oer, "eta_cer": eta_cer, "eta_hcer": eta_hcer, "eta_cers": eta_cers,
                 "score": score}
 
         # add to json

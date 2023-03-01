@@ -95,8 +95,11 @@ max_replace = int((max_rep/100)*natoms)
 
 random.seed(111)
 data = {}
+oldlist = []
 id = 1
-for i in range(num_data):
+counter = 0
+#for i in range(num_data):
+while counter < num_data:
     surf_copy = surf.copy()
     surf_copy = remove_layer(atoms=surf_copy, symbol="O", higher=1)
     #
@@ -105,7 +108,7 @@ for i in range(num_data):
 
     # how many atoms to replace?
     if max_replace != 0:
-        num_replace = random.choice(range(1, max_replace + 1))
+        num_replace = random.choice(range(0, max_replace + 1))
     else:
         num_replace = 0
 
@@ -116,7 +119,7 @@ for i in range(num_data):
         for iatom in surf_copy:
             if iatom.symbol in elem_from:
                 iatom.symbol = replacing
-   # random
+    # random
     else:
         from_list = []
         for iatom in surf_copy:
@@ -131,14 +134,20 @@ for i in range(num_data):
     # get element atomic_numbers
     atomic_numbers = surf_copy.get_atomic_numbers()
     atomic_numbers = list(atomic_numbers)  # make non-numpy
-
+    
     formula = surf_copy.get_chemical_formula()
 
     surf_copy.set_calculator(calc)
 
     if check: view(surf_copy)
 
-    data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
-    db.write(surf_copy, data=data)
-    write("POSCAR", surf_copy)
-    id += 1
+    if atomic_numbers in oldlist:
+        # found overlap in the list ... go next
+        pass
+    else:
+        data = {"chemical_formula": formula, "atomic_numbers": atomic_numbers, "run": 0}
+        db.write(surf_copy, data=data)
+        write("POSCAR", surf_copy)
+        oldlist.append(atomic_numbers)
+        counter += 1
+        id += 1

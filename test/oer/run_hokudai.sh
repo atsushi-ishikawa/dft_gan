@@ -19,7 +19,9 @@ echo "exitcode = os.system(\"mpirun -np ${NUM_PROCS} ${PRG}\")" >> $vasp_script
 
 LBL=$$
 unique_id=$unique_id
-reactionfile="oer.txt"
+reactionfile="oer_and_cer.txt"
+#reactionfile="oer.txt"
+#reactionfile="oer_adsorb2.txt"
 encut=400
 steps=200
 npar=10

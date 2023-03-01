@@ -204,10 +204,10 @@ db = connect(surf_json)
 
 if "vasp" in calculator:
     prec   = "normal"
-    xc     = "rpbe"
+    xc     = "pbe"
     ivdw   = 0
     nsw    = 0  # overwritten by steps
-    nelm   = 30
+    nelm   = 40
     nelmin = 5
     ibrion = -1
     potim  = 0.1
@@ -215,8 +215,8 @@ if "vasp" in calculator:
     ismear = 0
     sigma  = 0.1
     ediff  = 1.0e-5
-    ediffg = -0.50
-    kpts   = [1, 1, 1]  # [4, 4, 1]
+    ediffg = -0.05
+    kpts   = [2, 2, 1]  # [4, 4, 1], gamma is not good
     ispin  = 1
     lasph  = True
     pp     = "potpaw_PBE.54"

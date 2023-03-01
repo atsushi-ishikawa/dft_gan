@@ -1,6 +1,6 @@
 #!/bin/sh
 surf_json="surf.json"
-num_data=1
+num_data=120
 max_sub=$num_data
 todolist="todolist.txt"
 tmpdb="tmp.db"

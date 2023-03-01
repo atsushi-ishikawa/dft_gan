@@ -19,14 +19,15 @@ cp surf.json surf.json.bk.$$
 cp reaction_energy.json reaction_energy.json.bk.$$
 
 #python rate.py
-python ${dir}/rate_oer.py
+#python ${dir}/rate_oer.py
+python ${dir}/rate_oer_and_cer.py
 #python energy_diagram.py
 
 rm doing_reaction_energy_calc 2> /dev/null
 touch doing_GAN
 
 # delete errornous samples from surface json file
-python ${dir}/delete_errors_from_surf.py
+python ${dir}/delete_errors_from_surf.py --target="eta_oer"
 
 # generate new samples and add them to surface json file
 python ${dir}/nn_reac.py

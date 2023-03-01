@@ -326,7 +326,7 @@ elements = ["Ru", "Ir", "Pt"]
 if method == "random":
     num_epoch  = 1
 else:
-    num_epoch  = 2000  # 2000 is better than 1000
+    num_epoch  = 5000  # 2000 is better than 1000
 
 printnum = 200
 batch_size = numdata//5  # from experience
