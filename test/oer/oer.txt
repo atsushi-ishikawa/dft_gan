@@ -1,4 +1,4 @@
-H2O + surf  --ads--> OH_fcc + 0.5*H2
-OH_fcc      --LH-->  O_fcc + 0.5*H2
-O_fcc + H2O --LH-->  OOH_fcc + 0.5*H2
-OOH_fcc     --LH-->  O2 + 0.5*H2 + surf
+H2O + surf       --ads--> OH_fcc + 0.5*H2
+OH_fcc           --LH-->  O_fcc + 0.5*H2
+O_fcc + H2O      --LH-->  OOH_fcc + 0.5*H2
+OOH_fcc + 1.5*H2 --LH-->  surf + 2*H2O

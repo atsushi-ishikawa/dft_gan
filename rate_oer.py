@@ -14,8 +14,6 @@ parser.add_argument("--reac_json", default="reaction_energy.json", help="json fo
 args = parser.parse_args()
 reac_json = args.reac_json
 
-debug = False
-
 T = 298.15  # K
 kJtoeV = 1/98.415
 kB = 8.617e-5  # eV/K
@@ -24,7 +22,7 @@ kB = 8.617e-5  # eV/K
 reactionfile = "oer.txt"
 rxn_num = get_number_of_reaction(reactionfile)
 
-## OER
+## OER elementary reactions: note that they match with the reactions in reactionfile.
 # 0) H2O + * -> OH* + H+ + e-
 # 1) OH* -> O* + H+ + e-
 # 2) O* + H2O -> OOH* + H+ + e-
@@ -33,7 +31,7 @@ rxn_num = get_number_of_reaction(reactionfile)
 #  O2 Gibbs energy is replaced: O2 + 2H2 <-> 2H2O + 4.92
 #
 species = {"H2" : 0, "H2O": 1, "OHads": 2, "Oads": 3, "OOHads": 4, "O2": 5}
-E_redox = {"OER": 0.758}
+E_redox = {"OER": 1.23}
 
 # entropy in eV/K
 S = np.zeros(len(species))
@@ -88,6 +86,8 @@ for id in range(num_data):
         deltaH = deltaE + deltaZPE
         deltaG = deltaH - T*deltaS
         deltaG = deltaG + shift
+        print(deltaH)
+        quit()
 
         eta_oer  = np.max(deltaG[0:4]) - E_redox["OER"]  # overpotential of OER
 
