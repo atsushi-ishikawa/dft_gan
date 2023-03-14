@@ -303,15 +303,15 @@ df1 = df1.set_index("unique_id")
 df2 = df2.set_index("unique_id")
 df  = pd.concat([df1, df2], axis=1)
 df  = df.sort_values("score", ascending=False)
-
-print("best score:",  df.iloc[0]["score"])
-print("worst score:", df.iloc[-1]["score"])
 #
 # droping NaN in atomic numbers and score
 #
 df = df.dropna(subset=["atomic_numbers"])
 df = df.dropna(subset=["score"])
 numdata = len(df)
+
+print("best score:",  df.iloc[0]["score"])
+print("worst score:", df.iloc[-1]["score"])
 #
 # parameters
 #
@@ -322,11 +322,12 @@ nclass = 5  # 10
 #
 fix_element_number = 8  # oxygen
 elements = ["Ru", "Ir", "Pt"]
+#elements = ["Ru", "Pt"]
 
 if method == "random":
     num_epoch  = 1
 else:
-    num_epoch  = 5000  # 2000 is better than 1000
+    num_epoch  = 2000  # 2000 is better than 1000
 
 printnum = 200
 batch_size = numdata//5  # from experience
@@ -376,7 +377,7 @@ dataloader = make_dataloader(x=df["atomic_numbers_replace_scaled"], y=df["rank"]
 nchannel = 64
 nstride  = 3
 natom = len(df.iloc[0]["atomic_numbers_replace_scaled"])
-nrun  = df["run"].max()
+nrun  = int(df["run"].max())
 
 criterion = nn.MSELoss()
 #
@@ -434,8 +435,17 @@ nlayer = 4
 #surf = make_step(surf)
 
 db = connect("surf.json")
-surf = db.get_atoms(id=1).copy()
+id = 1
+while True:
+    try:
+        surf = db.get_atoms(id=id).copy()
+        break
+    except:
+        pass
 
+    id += 1
+
+#surf = db.get_atoms(id=1).copy()
 #surf.pbc = True
 #surf.translate([0, 0, -vacuum+1.0])
 

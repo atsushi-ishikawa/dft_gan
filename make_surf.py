@@ -72,8 +72,9 @@ else:
 #surf = surface(bulk, indices=[1,1,1], layers=9, vacuum=vacuum)
 #surf = surf*[3,3,1]
 
+eps = 1.0e-2
 surf.translate([0, 0, -vacuum+0.1])
-surf.wrap()
+surf.wrap(eps=eps)
 
 calc  = EMT()
 
@@ -113,6 +114,9 @@ while counter < num_data:
         num_replace = 0
 
     ## replace element
+    if len(set(elem_from) & set(surf.get_chemical_symbols())) == 0:
+        raise ValueError("replacing element does not exist")
+
     # all 
     if replace_pattern == "all":
         replacing = elem_to.pop()

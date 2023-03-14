@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import json
+import shutil
 from tools import load_ase_json
 from ase.db import connect
 
@@ -15,6 +16,10 @@ args = parser.parse_args()
 surf_json = args.surf_json
 reac_json = args.reac_json
 target = args.target
+
+# take copy
+shutil.copyfile(surf_json, surf_json.split(".")[0] + "_raw.json")
+shutil.copyfile(reac_json, reac_json.split(".")[0] + "_raw.json")
 
 print("deleting unfinished result from {}".format(surf_json))
 
@@ -35,11 +40,22 @@ null_list = df[df[target].isnull()].index.values
 # delete errournous value
 thre = -3.0
 bad_list = df[df[target] < thre].index.values
-
 del_list = np.concatenate([null_list, bad_list])
 
-db = connect(surf_json)
+print("deleting outliers ({0:d} samples with score < {1:5.3f})".format(len(del_list), thre))
+
+#
+## delete from surface json file
+db_surf = connect(surf_json)
 for i in del_list:
-    id = db.get(unique_id=i).id
-    db.delete([id])
+    id = db_surf.get(unique_id=i).id
+    db_surf.delete([id])
+
+# delete from reacion energy json file
+df_reac = df_reac[df_reac["score"] > thre]
+df_reac["unique_id"] = df_reac.index
+df_reac = df_reac[df_reac.columns[::-1]]  # move unique_id to first
+parsed = json.loads(df_reac.to_json(orient="records"))
+with open(reac_json, "w") as f:
+    json.dump(parsed, f, indent=4)
 

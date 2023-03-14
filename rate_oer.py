@@ -86,8 +86,6 @@ for id in range(num_data):
         deltaH = deltaE + deltaZPE
         deltaG = deltaH - T*deltaS
         deltaG = deltaG + shift
-        print(deltaH)
-        quit()
 
         eta_oer  = np.max(deltaG[0:4]) - E_redox["OER"]  # overpotential of OER
 

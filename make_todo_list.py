@@ -37,6 +37,7 @@ not_done = df.index.values
 
 if len(not_done) == 0:
     # all done
+    print("nothing to do")
     pass
 else:
     # make todo_list
