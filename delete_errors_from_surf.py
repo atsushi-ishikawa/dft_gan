@@ -38,7 +38,7 @@ df = pd.concat([df_surf, df_reac], axis=1)
 null_list = df[df[target].isnull()].index.values
 
 # delete errournous value
-thre = -3.0
+thre = -1.5  # -1.5 or -2.5, -2.5 found several outliers.
 bad_list = df[df[target] < thre].index.values
 del_list = np.concatenate([null_list, bad_list])
 

@@ -222,7 +222,7 @@ def make_atomic_numbers(inputlist, oldlist, elements):
     global scaler_selection
 
 
-    AN = {"Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Ir": 77, "Pt": 78}
+    AN = {"Ti": 22, "Ni": 28, "Ru": 44, "Rh": 45, "Pd": 46, "Ir": 77, "Pt": 78}
     elements = list(map(lambda x: AN[x], elements))
     elements = sorted(elements)
 
@@ -234,7 +234,6 @@ def make_atomic_numbers(inputlist, oldlist, elements):
     lists = inputlist.astype(int).tolist()  # float --> int --> python list
 
     if scaler_selection == "minmax":
-        #lists = [list(pd.cut(pd.Series(i), len(elements), labels=elements)) for i in lists]
         lists = [list(map(lambda x: elements[x], i)) for i in lists]
     else:
         lists = [list(map(lambda x: elements[0] if x < np.mean(list) else elements[-1], i)) for i in lists]
@@ -321,8 +320,10 @@ nclass = 5  # 10
 # elements
 #
 fix_element_number = 8  # oxygen
-elements = ["Ru", "Ir", "Pt"]
+#elements = ["Ru", "Ir", "Pt"]
 #elements = ["Ru", "Pt"]
+#elements = ["Ti", "Ru"]
+elements = ["Ti", "Ru", "Ir"]
 
 if method == "random":
     num_epoch  = 1
@@ -330,7 +331,8 @@ else:
     num_epoch  = 2000  # 2000 is better than 1000
 
 printnum = 200
-batch_size = numdata//5  # from experience
+batch_size_percent = 20
+batch_size = int(batch_size_percent*numdata/100)
 z_dim = 100
 lr = 1.0e-3
 b1 = 0.5

@@ -164,7 +164,7 @@ def get_number_of_layers(atoms):
         zpos = np.round(pos[:, 2], decimals=4)
         nlayers.append(len(list(set(zpos))))
 
-    return nlayers
+    return nlayers[0]
 
 
 def set_tags_by_z(atoms):
